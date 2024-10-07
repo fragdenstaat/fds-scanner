@@ -3,78 +3,102 @@
         <ion-header>
             <ion-toolbar>
                 <ion-title>Anfragen</ion-title>
+                <ion-buttons slot="end">
+                    <ion-button :router-link="'/account'">
+                        Konto
+                    </ion-button>
+                </ion-buttons>
+            </ion-toolbar>
+            <ion-toolbar>
+                <ion-searchbar @ionInput="searchQuery = $event.target.value || ''" show-clear-button="focus" value=""
+                    placeholder="Anfrage suchen"></ion-searchbar>
             </ion-toolbar>
         </ion-header>
         <ion-content class="ion-padding">
-            <ion-searchbar show-clear-button="focus" value="Show on Focus"></ion-searchbar>
             <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
                 <ion-refresher-content></ion-refresher-content>
             </ion-refresher>
             <ion-list>
-                <ion-item v-for="request in requests" :router-link="'/request/' + request.id"
-                    router-direction="forward">
-                    <ion-label>
-                        <h2>{{ request.title }}</h2>
-                        <p>Paragraph</p>
-                    </ion-label>
-                </ion-item>
+                <TransitionGroup name="list">
+                    <ion-item v-for="request in filteredRequests" :router-link="'/request/' + request.id"
+                        :key="request.id" router-direction="forward" class="list-item">
+                        <ion-label>
+                            <h2>{{ request.title }}</h2>
+                            <p>
+                                [#{{ request.id }}] {{ request.created_at }}
+                            </p>
+                        </ion-label>
+                    </ion-item>
+                </TransitionGroup>
             </ion-list>
-
+            <div v-if="loading" class="ion-text-center">
+                <ion-spinner></ion-spinner>
+            </div>
+            <ion-toast v-for="message in toastMessages" :message="message" :duration="5000"></ion-toast>
         </ion-content>
     </ion-page>
 </template>
 
-<script lang="ts">
-import { invoke } from '@tauri-apps/api/core';
+<script setup lang="ts">
 
-import { IonButton, IonContent, IonHeader, IonItem, IonLabel, IonList, IonPage, IonRefresher, IonRefresherContent, IonSearchbar, IonSkeletonText, IonTitle, IonToolbar } from '@ionic/vue';
-import { defineComponent, onMounted, ref } from 'vue';
 
-type Request = {
-    id: number;
-    title: string;
-    date: string;
-};
+import { IonButton, IonButtons, IonContent, IonHeader, IonItem, IonLabel, IonList, IonPage, IonRefresher, IonRefresherContent, IonSearchbar, IonSpinner, IonTitle, IonToast, IonToolbar } from '@ionic/vue';
+import { computed, onMounted, ref } from 'vue';
 
-const getRequests = async (): Promise<Request[]> => {
-    return await invoke('get_foirequests');
-};
+import { useFoiRequestsStore } from '../stores/foirequests.ts';
+import { useToastMessages } from '../utils.ts';
 
-export default defineComponent({
-    components: {
-        IonButton,
-        IonContent,
-        IonHeader,
-        IonItem, IonList, IonLabel,
-        IonPage,
-        IonRefresher,
-        IonRefresherContent,
-        IonSkeletonText,
-        IonSearchbar,
-        IonTitle,
-        IonToolbar,
-    },
-    setup() {
-        const loading = ref<boolean>(true);
-        const requests = ref<Request[]>([]);
+const loading = ref<boolean>(true);
+const searchQuery = ref<string>('');
+const { toastMessages } = useToastMessages();
 
-        onMounted(async () => {
-            const requestsData = await getRequests();
-            requests.value = requestsData;
-            loading.value = false;
-        });
+const store = useFoiRequestsStore()
 
-        async function handleRefresh(event: CustomEvent) {
-            const requestsData = await getRequests();
-            requests.value = requestsData;
-            event.target?.complete();
+const filteredRequests = computed(() => {
+    return store.requests.filter((request) => {
+        if (searchQuery.value === '') {
+            return true;
         }
+        return request.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+            request.id.toString().startsWith(searchQuery.value);
+    });
+})
 
-        return {
-            loading,
-            requests,
-            handleRefresh
-        };
-    },
+
+onMounted(async () => {
+    await store.getRequests();
+    loading.value = false;
 });
+
+
+async function handleRefresh(event: CustomEvent) {
+    await store.getRequests();
+    event.target?.complete();
+}
 </script>
+
+<style>
+.list-item {
+    z-index: 2;
+}
+
+/* 1. declare transition */
+.list-move,
+.list-enter-active,
+.list-leave-active {
+    transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
+}
+
+/* 2. declare enter from and leave to state */
+.list-enter-from,
+.list-leave-to {
+    opacity: 0;
+}
+
+/* 3. ensure leaving items are taken out of layout flow so that moving
+      animations can be calculated correctly. */
+.list-leave-active {
+    position: absolute;
+    z-index: 1;
+}
+</style>

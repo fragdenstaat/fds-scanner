@@ -5,3 +5,8 @@ declare module "*.vue" {
   const component: DefineComponent<{}, {}, any>;
   export default component;
 }
+
+// extend EventTarget with complete method
+interface EventTarget {
+  complete(): void;
+}

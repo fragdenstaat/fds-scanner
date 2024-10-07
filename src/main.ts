@@ -17,6 +17,7 @@ import '@ionic/vue/css/text-transformation.css';
 import '@ionic/vue/css/palettes/dark.system.css';
 
 import { IonicVue } from '@ionic/vue';
+import { createPinia } from 'pinia';
 
 import { createApp } from "vue";
 import App from "./App.vue";
@@ -24,6 +25,10 @@ import App from "./App.vue";
 import router from './router.ts';
 
 const app = createApp(App).use(IonicVue).use(router);
+
+const pinia = createPinia()
+
+app.use(pinia)
 
 router.isReady().then(() => {
   app.mount('#app');

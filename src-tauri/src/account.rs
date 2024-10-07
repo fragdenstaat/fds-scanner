@@ -1,0 +1,336 @@
+use thiserror::Error;
+
+use oauth2::basic::BasicClient;
+use oauth2::reqwest::async_http_client;
+use oauth2::url::Url;
+use oauth2::{
+    AccessToken, AuthUrl, AuthorizationCode, ClientId, CsrfToken, PkceCodeChallenge,
+    PkceCodeVerifier, RedirectUrl, RefreshToken, RevocationUrl, Scope, StandardRevocableToken,
+    TokenResponse, TokenUrl,
+};
+use std::sync::Mutex;
+use tauri::State;
+use tauri_plugin_webauth::{WebAuthExt, WebAuthRequest};
+
+use crate::api::get_api_client;
+use crate::{AppState, AuthState, User};
+
+#[cfg(target_os = "ios")]
+const REDIRECT_URI: &'static str = "fragdenstaat://loggedin";
+
+#[cfg(not(target_os = "ios"))]
+const REDIRECT_URI: &str = "https://fragdenstaat.de/app/scanner/loggedin/";
+
+const CLIENT_ID: &str = "1nmNtPIiQ7xA1yqzZDwEmOlguNEhdnp5vQpGyfSd";
+// const CLIENT_ID: &str = "72mJxKUcoVRTAbE0X5Eur5FoSDiN0GY51EKmIuYn";
+
+const QRCODE_LOGIN_URL: &str = "https://fragdenstaat.de/go/";
+
+const AUTHORIZE_ENDPOINT: &str = "https://fragdenstaat.de/account/authorize/";
+const ACCESS_TOKEN_ENDPOINT: &str = "https://fragdenstaat.de/account/token/";
+// const AUTHORIZE_ENDPOINT: &str = "http://localhost:8000/account/authorize/";
+// const ACCESS_TOKEN_ENDPOINT: &str = "http://localhost:8000/account/token/";
+
+const REFRESH_TOKEN_ENDPOINT: &str = "https://fragdenstaat.de/account/token/";
+const REVOKE_TOKEN_ENDPOINT: &str = "https://fragdenstaat.de/account/revoke_token/";
+const USER_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/user/";
+
+const SCOPE: [&str; 5] = [
+    "read:user",
+    "read:profile",
+    "read:email",
+    "read:request",
+    "upload:message",
+];
+
+struct OAuthData {
+    auth_url: Url,
+    pkce_verifier: PkceCodeVerifier,
+    csrf_token: CsrfToken,
+}
+
+#[derive(Error, Debug)]
+#[error("{0}")]
+pub struct AuthorizationError(String);
+
+#[derive(Error, Debug)]
+#[error("{0}")]
+pub struct UserError(pub String);
+
+#[derive(Debug, thiserror::Error)]
+pub enum AccountError {
+    #[error("Failed to parse URL: {0}")]
+    UrlParse(#[from] oauth2::url::ParseError),
+    #[error("Failed to perform authentication: {0}")]
+    WebAuthError(#[from] tauri_plugin_webauth::Error),
+    #[error("Authorization error: {0}")]
+    AuthorizationError(#[from] AuthorizationError),
+    #[error("User error: {0}")]
+    UserError(#[from] UserError),
+    #[error("Failed to perform request: {0}")]
+    RequestError(#[from] reqwest::Error),
+    #[error("Framework error: {0}")]
+    TauriError(#[from] tauri::Error),
+    #[error("OAuth configuration error: {0}")]
+    OAuthError(#[from] oauth2::ConfigurationError),
+}
+
+impl serde::Serialize for AccountError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        serializer.serialize_str(self.to_string().as_ref())
+    }
+}
+
+#[tauri::command]
+pub async fn get_user(state: State<'_, Mutex<AppState>>) -> Result<User, AccountError> {
+    log::info!("get user in main called");
+
+    {
+        let state = state.lock().unwrap();
+        if let Some(user) = &state.user {
+            log::debug!("Found user in state: {:?}", user);
+            return Ok(user.clone());
+        }
+    }
+
+    {
+        let state = state.lock().unwrap();
+        if state.auth.is_none() {
+            return Err(UserError("No auth state found".to_string()).into());
+        }
+    };
+
+    let client = get_api_client(&state)?;
+    let request = client.get(USER_ENDPOINT);
+    log::debug!("Requesting user data... {:?}", request);
+
+    let response = request.send().await?;
+
+    log::debug!("Received response: {:?}", response);
+    // log::debug!("Received text: {:?}", response.text().await?);
+    // return Err(UserError("foo".to_string()).into());
+
+    let user = response.json::<User>().await?;
+
+    // TODO: Catch error and possibly refresh user token
+
+    log::debug!("Received user: {:?}", user);
+
+    {
+        let mut state = state.lock().unwrap();
+        state.user = Some(user.clone());
+    }
+
+    Ok(user)
+}
+
+#[tauri::command]
+pub async fn start_oauth(
+    app_handle: tauri::AppHandle,
+    state: State<'_, Mutex<AppState>>,
+    start_url: Option<String>,
+) -> Result<bool, AccountError> {
+    log::info!("start auth in main called");
+
+    let verified_start_url = match start_url {
+        Some(url) => {
+            let url = Url::parse(url.as_str())?;
+            if url.host_str() != Some("fragdenstaat.de") {
+                return Err(AuthorizationError("Invalid start URL".to_string()).into());
+            }
+            Some(url)
+        }
+        None => None,
+    };
+
+    let oauth2_client = get_outh2_client()?;
+    let auth_data = get_oauth_url(&oauth2_client)?;
+
+    let auth_url = match verified_start_url {
+        Some(url) => {
+            let mut auth_url = url;
+            auth_url
+                .query_pairs_mut()
+                .append_pair("next", auth_data.auth_url.as_str());
+            auth_url
+        }
+        None => auth_data.auth_url,
+    };
+
+    let auth_response = app_handle.webauth().start_auth(WebAuthRequest {
+        url: auth_url.to_string(),
+        redirect_url: REDIRECT_URI.to_string(),
+    })?;
+
+    let return_url = match auth_response.url {
+        Some(url) => url,
+        None => return Err(AuthorizationError("Invalid return URL".to_string()).into()),
+    };
+    log::info!("Received auth response: {}", return_url);
+    if !return_url.starts_with(REDIRECT_URI) {
+        return Err(AuthorizationError(format!("Mismatching return URL: {}", return_url)).into());
+    }
+    let return_url = Url::parse(return_url.as_str())?;
+    let query_params = return_url.query_pairs();
+
+    let mut authorization_code: Option<String> = None;
+    let mut state_param: Option<String> = None;
+
+    for (key, value) in query_params {
+        if key == "error" {
+            return Err(AuthorizationError(format!("error in query params: {}", value)).into());
+        }
+        if key == "code" {
+            authorization_code = Some(value.to_string());
+        }
+        if key == "state" {
+            state_param = Some(value.to_string());
+        }
+    }
+
+    let authorization_code = match authorization_code {
+        Some(code) => code,
+        None => return Err(AuthorizationError("No code found in response".to_string()).into()),
+    };
+    let authorization_code = AuthorizationCode::new(authorization_code);
+
+    let state_param = match state_param {
+        Some(state) => state,
+        None => return Err(AuthorizationError("No state found in response".to_string()).into()),
+    };
+
+    if *auth_data.csrf_token.secret() != state_param {
+        return Err(AuthorizationError("State does not match".to_string()).into());
+    }
+
+    let pkce_verifier = auth_data.pkce_verifier;
+    let token_result = oauth2_client
+        .exchange_code(authorization_code)
+        // Set the PKCE code verifier.
+        .set_pkce_verifier(pkce_verifier)
+        .request_async(async_http_client)
+        .await;
+    let token_result = match token_result {
+        Ok(token) => token,
+        Err(err) => match err {
+            oauth2::RequestTokenError::ServerResponse(response) => {
+                log::error!(
+                    "{}",
+                    response
+                        .error_description()
+                        .unwrap_or(&"No error description".to_string())
+                );
+                log::error!("Failed to request token: {:?}", response);
+                return Err(AuthorizationError("Server response error".to_string()).into());
+            }
+            oauth2::RequestTokenError::Request(err) => {
+                log::error!("Failed to request token: {:?}", err);
+                return Err(AuthorizationError("Request error".to_string()).into());
+            }
+            _ => {
+                log::error!("Failed to request token: {:?}", err);
+                return Err(AuthorizationError("Parse or other error".to_string()).into());
+            }
+        },
+    };
+
+    // let expires_at = match token_result.expires_in() {
+    //     Some(expires_in) => {
+    //         Some(SystemTime::now().
+    //             .duration_since(SystemTime::UNIX_EPOCH)
+    //             .unwrap() + expires_in)
+    //     }
+    //     None => None
+    // };
+
+    let auth_state = AuthState {
+        access_token: token_result.access_token().secret().to_string(),
+        refresh_token: token_result.refresh_token().map(|x| x.secret().to_string()),
+        expires_at: None,
+    };
+    auth_state.save(&app_handle).unwrap();
+    log::info!("Received access token: {}", auth_state.access_token);
+    {
+        let mut state = state.lock().unwrap();
+        state.auth = Some(auth_state);
+    }
+
+    Ok(true)
+}
+
+fn get_outh2_client() -> Result<BasicClient, AccountError> {
+    // Create an OAuth2 client by specifying the client ID, client secret, authorization URL and
+    // token URL.
+    let client = BasicClient::new(
+        ClientId::new(CLIENT_ID.to_string()),
+        None,
+        AuthUrl::new(AUTHORIZE_ENDPOINT.to_string())?,
+        Some(TokenUrl::new(ACCESS_TOKEN_ENDPOINT.to_string())?),
+    )
+    // Set the URL the user will be redirected to after the authorization process.
+    .set_redirect_uri(RedirectUrl::new(REDIRECT_URI.to_string())?)
+    .set_revocation_uri(RevocationUrl::new(REVOKE_TOKEN_ENDPOINT.to_string())?);
+    Ok(client)
+}
+
+fn get_oauth_url(client: &BasicClient) -> Result<OAuthData, AccountError> {
+    // Generate a PKCE challenge.
+    let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
+
+    let mut auth_request = client.authorize_url(CsrfToken::new_random);
+    // Set the desired scopes.
+
+    for scope in SCOPE.iter() {
+        auth_request = auth_request.add_scope(Scope::new(scope.to_string()));
+    }
+    // Set the PKCE code challenge.
+    auth_request = auth_request.set_pkce_challenge(pkce_challenge);
+    // Generate the full authorization URL.
+    let (auth_url, csrf_token) = auth_request.url();
+
+    // This is the URL you should redirect the user to, in order to trigger the authorization
+    // process.
+    Ok(OAuthData {
+        auth_url,
+        pkce_verifier,
+        csrf_token,
+    })
+}
+
+#[tauri::command]
+pub async fn logout(state: State<'_, Mutex<AppState>>) -> Result<bool, AccountError> {
+    log::info!("start logout in main called");
+
+    let oauth2_client = get_outh2_client()?;
+
+    let (access_token, refresh_token) = {
+        let state = state.lock().unwrap();
+        match &state.auth {
+            Some(auth_state) => (
+                auth_state.access_token.clone(),
+                auth_state.refresh_token.clone(),
+            ),
+            None => {
+                return Err(UserError("No auth state found".to_string()).into());
+            }
+        }
+    };
+    oauth2_client.revoke_token(StandardRevocableToken::AccessToken(AccessToken::new(
+        access_token,
+    )))?;
+    if let Some(refresh_token) = refresh_token {
+        oauth2_client.revoke_token(StandardRevocableToken::RefreshToken(RefreshToken::new(
+            refresh_token,
+        )))?;
+    }
+
+    {
+        let mut state = state.lock().unwrap();
+        state.auth = None;
+        state.user = None;
+    }
+    Ok(true)
+}

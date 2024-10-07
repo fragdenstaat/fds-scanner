@@ -3,54 +3,72 @@
         <ion-header>
             <ion-toolbar>
                 <ion-buttons slot="start">
-                    <ion-back-button></ion-back-button>
+                    <ion-back-button text="Zurück"></ion-back-button>
                 </ion-buttons>
-                <ion-title>Request</ion-title>
+                <ion-title>Anfrage</ion-title>
             </ion-toolbar>
         </ion-header>
 
         <ion-content class="ion-padding">
-            Request ID: {{ id }}
-            <ion-button router-link="/message/1" router-direction="forward">Message 1</ion-button>
+            <h2>{{ request.title }} <small>[#{{ request.id }}]</small></h2>
+            <ion-list>
+                <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
+                    <ion-refresher-content></ion-refresher-content>
+                </ion-refresher>
+
+                <ion-item v-for="message in store.messages" :router-link="'/message/' + message.id"
+                    router-direction="forward">
+                    <ion-label>
+                        <h2>{{ message.subject }}</h2>
+                        <p>
+                            von {{ message.sender }}
+                        </p>
+                    </ion-label>
+                </ion-item>
+            </ion-list>
+            <ion-spinner v-if="loading" class="ion-text-center"></ion-spinner>
         </ion-content>
     </ion-page>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
 import {
     IonBackButton,
-    IonButton, IonButtons,
-    IonContent, IonHeader, IonPage,
-    IonSkeletonText,
-    IonTitle, IonToolbar,
+    IonButtons,
+    IonContent, IonHeader,
+    IonItem,
+    IonLabel,
+    IonList,
+    IonPage,
+    IonRefresher, IonRefresherContent,
+    IonSpinner,
+    IonTitle, IonToolbar
 } from '@ionic/vue';
-import { defineComponent } from 'vue';
+import { onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
+import { FoiRequest, useFoiRequestsStore } from '../stores/foirequests.ts';
 
-export default defineComponent({
-    name: 'Request',
-    components: {
-        IonButtons,
-        IonBackButton,
-        IonButton,
-        IonContent,
-        IonSkeletonText,
-        IonHeader,
-        IonPage,
-        IonTitle,
-        IonToolbar,
-    },
-    props: {
-        id: String,
-    },
-    data() {
-        return {
-            loading: true,
-        };
-    },
-    mounted() {
-        setTimeout(() => {
-            this.loading = false;
-        }, 2000);
-    },
+import { useFoiMessagesStore } from '../stores/foimessages.ts';
+
+
+const foirequestStore = useFoiRequestsStore()
+const store = useFoiMessagesStore()
+
+const route = useRoute<"request">();
+const requestId = parseInt(route.params.id);
+const loading = ref(true)
+
+const request: FoiRequest = foirequestStore.requestMap.get(requestId)!
+
+onMounted(async () => {
+    await store.getMessages(requestId);
+    loading.value = false;
 });
+
+async function handleRefresh(event: CustomEvent) {
+    await store.getMessages(requestId);
+    event.target?.complete();
+}
+
+
 </script>

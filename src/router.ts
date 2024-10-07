@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 
-import type { RouteRecordInfo } from 'vue-router';
+import { type RouteRecordInfo } from 'vue-router';
 
 // Define an interface of routes
 export interface RouteNamedMap {
@@ -16,26 +16,40 @@ export interface RouteNamedMap {
         Record<never, never>
     >
     login: RouteRecordInfo<
-        // here we have the same name
         'login',
-        // this is the path, it will appear in autocompletion
         '/login',
-        // these are the raw params. In this case, there are no params allowed
         Record<never, never>,
-        // these are the normalized params
+        Record<never, never>
+    >
+    qrcode: RouteRecordInfo<
+        'login-qrcode',
+        '/login/qrcode',
+        Record<never, never>,
+        Record<never, never>
+    >
+    account: RouteRecordInfo<
+        'account',
+        '/account',
+        Record<never, never>,
         Record<never, never>
     >
     // repeat for each route..
     // Note you can name them whatever you want
-    'request': RouteRecordInfo<
+    request: RouteRecordInfo<
         'request',
         '/request/:id',
         { id: number | string }, // raw value
         { id: string } // normalized value
     >
-    'message': RouteRecordInfo<
+    message: RouteRecordInfo<
         'message',
         '/message/:id',
+        { id: number | string }, // raw value
+        { id: string } // normalized value
+    >
+    scan: RouteRecordInfo<
+        'message-scan',
+        '/message/:id/scan',
         { id: number | string }, // raw value
         { id: string } // normalized value
     >
@@ -48,16 +62,22 @@ declare module 'vue-router' {
     }
 }
 
+import Account from './components/Account.vue';
 import Login from './components/Login.vue';
 import Message from './components/Message.vue';
+import QrCode from './components/QrCode.vue';
 import Request from './components/Request.vue';
 import RequestList from './components/RequestList.vue';
+import Scan from './components/Scan.vue';
 
 const routes = [
     { path: '/', name: 'home', component: RequestList },
     { path: '/login', name: 'login', component: Login },
+    { path: '/login/qrcode', name: 'login-qrcode', component: QrCode },
+    { path: '/account', name: 'account', component: Account },
     { path: '/request/:id', name: 'request', component: Request },
     { path: '/message/:id', name: 'message', component: Message },
+    { path: '/message/:id/scan/', name: 'message-scan', component: Scan },
 ];
 
 const router = createRouter({
@@ -65,11 +85,5 @@ const router = createRouter({
     routes,
 });
 
-// const isAuthenticated = false;
-
-// router.beforeEach((to, _from, next) => {
-//     if (to.name !== 'login' && !isAuthenticated) next({ name: 'login' })
-//     else next()
-// })
 
 export default router;
