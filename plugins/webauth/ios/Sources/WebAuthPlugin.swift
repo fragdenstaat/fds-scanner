@@ -60,13 +60,19 @@ class WebAuthPlugin: Plugin, ASWebAuthenticationPresentationContextProviding {
     // var iOS14min: Bool = false
     // if #available(iOS 14.0, *) { iOS14min = true }
 
-    self.webview.isOpaque = false
-
     self.session = ASWebAuthenticationSession(
       url: authURL,
       callbackURLScheme: callbackScheme
     ) { url, error in
-      self.webview.isOpaque = true
+      guard error == nil else {
+        if let authenticationError = error as? ASWebAuthenticationSessionError,
+          authenticationError.code == .canceledLogin {
+          invoke.resolve(WebAuthResponse(url: nil))
+        } else {
+          invoke.reject(error?.localizedDescription ?? "Unknown error")
+        }
+        return
+      }
       invoke.resolve(WebAuthResponse(url: url?.absoluteString))
     }
 
