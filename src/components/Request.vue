@@ -26,7 +26,9 @@
                     </ion-label>
                 </ion-item>
             </ion-list>
-            <ion-spinner v-if="loading" class="ion-text-center"></ion-spinner>
+            <div v-if="loading" class="ion-text-center">
+                <ion-spinner v-if="loading"></ion-spinner>
+            </div>
         </ion-content>
     </ion-page>
 </template>

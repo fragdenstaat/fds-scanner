@@ -19,7 +19,6 @@
     "log:default",
     "barcode-scanner:default",
     "store:default",
-    "barcode-scanner:default",
-    "barcode-scanner:default"
+    "documentcamera:default"
   ]
 }

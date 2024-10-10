@@ -1,40 +1,53 @@
 use reqwest::header;
 use serde::de::DeserializeOwned;
+use tus_async_client::{Client as TusClient, HttpHandler};
 
-use std::sync::Mutex;
+use std::collections::HashMap;
+use std::path::Path;
+use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, State, Url};
 
-use crate::account::{AccountError, UserError};
-use crate::AppState;
+use crate::error::{AppError, UserError};
+use crate::{AppState, UserId};
+use chrono::prelude::*;
 
 const REQUEST_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/request/";
 const MESSAGE_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/message/";
 const UPLOAD_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/upload/";
 const ATTACHMENT_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/attachment/";
+const UPLOAD_URL_BASE: &str = "https://fragdenstaat.de";
+
+const DEFAULT_CHUNK_SIZE: usize = 4 * 1024 * 1024;
+
+type FoiRequestId = u64;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct FoiRequest {
-    id: u32,
+    id: FoiRequestId,
     url: String,
     title: String,
     created_at: String,
     last_message: String,
 }
 
+pub type MessageId = u64;
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct FoiMessage {
-    id: u32,
+    id: MessageId,
     timestamp: String,
     is_response: bool,
     sender: String,
     subject: String,
 }
 
+pub type AttachmentId = u64;
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct FoiAttachment {
-    id: u32,
+    id: AttachmentId,
     name: String,
     filetype: String,
     size: u64,
@@ -77,7 +90,7 @@ pub fn get_api_client(
     reqwest::Client::builder().default_headers(headers).build()
 }
 
-fn get_user_id(state: &State<'_, Mutex<AppState>>) -> Result<u32, AccountError> {
+fn get_user_id(state: &State<'_, Mutex<AppState>>) -> Result<UserId, AppError> {
     let state = state.lock().unwrap();
 
     let user_id = match state.user {
@@ -91,7 +104,7 @@ fn get_user_id(state: &State<'_, Mutex<AppState>>) -> Result<u32, AccountError> 
 pub async fn get_foirequests(
     app: AppHandle,
     state: State<'_, Mutex<AppState>>,
-) -> Result<bool, AccountError> {
+) -> Result<bool, AppError> {
     let user_id = get_user_id(&state)?;
     let client = get_api_client(&state)?;
 
@@ -110,7 +123,7 @@ pub async fn get_foirequests(
 pub async fn get_all_objects<T>(
     url: String,
     state: State<'_, Mutex<AppState>>,
-) -> Result<Vec<T>, AccountError>
+) -> Result<Vec<T>, AppError>
 where
     T: Clone + Serialize + DeserializeOwned,
 {
@@ -133,8 +146,8 @@ where
 #[tauri::command(rename_all = "snake_case")]
 pub async fn get_foimessages(
     state: State<'_, Mutex<AppState>>,
-    foirequest_id: u32,
-) -> Result<Vec<FoiMessage>, AccountError> {
+    foirequest_id: FoiRequestId,
+) -> Result<Vec<FoiMessage>, AppError> {
     let url = format!("{}?request={}&kind=post", MESSAGE_ENDPOINT, foirequest_id);
     let objects = get_all_objects(url, state).await?;
     Ok(objects)
@@ -144,8 +157,78 @@ pub async fn get_foimessages(
 pub async fn get_foiattachments(
     state: State<'_, Mutex<AppState>>,
     foimessage_id: u32,
-) -> Result<Vec<FoiAttachment>, AccountError> {
+) -> Result<Vec<FoiAttachment>, AppError> {
     let url = format!("{}?belongs_to={}", ATTACHMENT_ENDPOINT, foimessage_id);
     let objects = get_all_objects(url, state).await?;
     Ok(objects)
+}
+
+pub fn get_tus_client(state: &State<'_, Mutex<AppState>>) -> Result<TusClient, AppError> {
+    let req_client = get_api_client(state)?;
+    Ok(TusClient::new(HttpHandler::new(Arc::new(req_client))))
+}
+
+pub async fn create_upload(client: &TusClient, file_path: &Path) -> Result<String, AppError> {
+    let local: DateTime<Local> = Local::now();
+    let current_date = local.format("%d-%m-%Y").to_string();
+
+    let mut metadata = HashMap::new();
+    metadata.insert("filetype".to_string(), "application/pdf".to_string());
+    metadata.insert("filename".to_string(), format!("scan_{}.pdf", current_date));
+
+    let upload_url = client
+        .create_with_metadata(UPLOAD_ENDPOINT, file_path, metadata)
+        .await?;
+
+    log::info!("Upload URL: {}", upload_url);
+    // let upload_url = Url::parse(&upload_url).unwrap();
+    // let upload_url = match upload_url.host_str() {
+    //     Some(_) => upload_url.to_string(),
+    //     _ => {
+    //         format!("{}{}", UPLOAD_URL_BASE, upload_url)
+    //     }
+    // };
+    let upload_url = format!("{}{}", UPLOAD_URL_BASE, upload_url);
+
+    Ok(upload_url)
+}
+
+pub async fn resume_upload(
+    client: &TusClient,
+    upload_url: &str,
+    file_path: &Path,
+) -> Result<(), AppError> {
+    client
+        .upload_with_chunk_size(upload_url, file_path, DEFAULT_CHUNK_SIZE)
+        .await?;
+
+    Ok(())
+}
+
+#[derive(Serialize)]
+struct CreateAttachment {
+    message: MessageId,
+    upload: String,
+}
+
+pub async fn create_attachment(
+    state: &State<'_, Mutex<AppState>>,
+    message_id: MessageId,
+    upload_url: &str,
+) -> Result<FoiAttachment, AppError> {
+    let client = get_api_client(state)?;
+
+    let att_data = CreateAttachment {
+        message: message_id,
+        upload: upload_url.to_string(),
+    };
+
+    let response = client
+        .post(ATTACHMENT_ENDPOINT)
+        .json(&att_data)
+        .send()
+        .await?;
+    response.status().is_success();
+    let attachment = response.json::<FoiAttachment>().await?;
+    Ok(attachment)
 }

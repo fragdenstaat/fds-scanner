@@ -1,18 +1,17 @@
-use thiserror::Error;
-
-use oauth2::basic::BasicClient;
+use oauth2::basic::{BasicClient, BasicTokenType};
 use oauth2::reqwest::async_http_client;
 use oauth2::url::Url;
 use oauth2::{
-    AccessToken, AuthUrl, AuthorizationCode, ClientId, CsrfToken, PkceCodeChallenge,
-    PkceCodeVerifier, RedirectUrl, RefreshToken, RevocationUrl, Scope, StandardRevocableToken,
-    TokenResponse, TokenUrl,
+    AccessToken, AuthUrl, AuthorizationCode, ClientId, CsrfToken, EmptyExtraTokenFields,
+    PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, RefreshToken, RevocationUrl, Scope,
+    StandardRevocableToken, StandardTokenResponse, TokenResponse, TokenUrl,
 };
 use std::sync::Mutex;
 use tauri::State;
 use tauri_plugin_webauth::{WebAuthExt, WebAuthRequest};
 
 use crate::api::get_api_client;
+use crate::error::{AppError, AuthorizationError, UserError};
 use crate::{AppState, AuthState, User};
 
 #[cfg(target_os = "ios")]
@@ -22,17 +21,10 @@ const REDIRECT_URI: &'static str = "fragdenstaat://loggedin";
 const REDIRECT_URI: &str = "https://fragdenstaat.de/app/scanner/loggedin/";
 
 const CLIENT_ID: &str = "1nmNtPIiQ7xA1yqzZDwEmOlguNEhdnp5vQpGyfSd";
-// const CLIENT_ID: &str = "72mJxKUcoVRTAbE0X5Eur5FoSDiN0GY51EKmIuYn";
-
-const QRCODE_LOGIN_URL: &str = "https://fragdenstaat.de/go/";
-
 const AUTHORIZE_ENDPOINT: &str = "https://fragdenstaat.de/account/authorize/";
 const ACCESS_TOKEN_ENDPOINT: &str = "https://fragdenstaat.de/account/token/";
-// const AUTHORIZE_ENDPOINT: &str = "http://localhost:8000/account/authorize/";
-// const ACCESS_TOKEN_ENDPOINT: &str = "http://localhost:8000/account/token/";
-
-const REFRESH_TOKEN_ENDPOINT: &str = "https://fragdenstaat.de/account/token/";
 const REVOKE_TOKEN_ENDPOINT: &str = "https://fragdenstaat.de/account/revoke_token/";
+
 const USER_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/user/";
 
 const SCOPE: [&str; 5] = [
@@ -49,33 +41,7 @@ struct OAuthData {
     csrf_token: CsrfToken,
 }
 
-#[derive(Error, Debug)]
-#[error("{0}")]
-pub struct AuthorizationError(String);
-
-#[derive(Error, Debug)]
-#[error("{0}")]
-pub struct UserError(pub String);
-
-#[derive(Debug, thiserror::Error)]
-pub enum AccountError {
-    #[error("Failed to parse URL: {0}")]
-    UrlParse(#[from] oauth2::url::ParseError),
-    #[error("Failed to perform authentication: {0}")]
-    WebAuthError(#[from] tauri_plugin_webauth::Error),
-    #[error("Authorization error: {0}")]
-    AuthorizationError(#[from] AuthorizationError),
-    #[error("User error: {0}")]
-    UserError(#[from] UserError),
-    #[error("Failed to perform request: {0}")]
-    RequestError(#[from] reqwest::Error),
-    #[error("Framework error: {0}")]
-    TauriError(#[from] tauri::Error),
-    #[error("OAuth configuration error: {0}")]
-    OAuthError(#[from] oauth2::ConfigurationError),
-}
-
-impl serde::Serialize for AccountError {
+impl serde::Serialize for AppError {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::ser::Serializer,
@@ -85,7 +51,10 @@ impl serde::Serialize for AccountError {
 }
 
 #[tauri::command]
-pub async fn get_user(state: State<'_, Mutex<AppState>>) -> Result<User, AccountError> {
+pub async fn get_user(
+    app_handle: tauri::AppHandle,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<User, AppError> {
     log::info!("get user in main called");
 
     {
@@ -103,20 +72,24 @@ pub async fn get_user(state: State<'_, Mutex<AppState>>) -> Result<User, Account
         }
     };
 
-    let client = get_api_client(&state)?;
-    let request = client.get(USER_ENDPOINT);
-    log::debug!("Requesting user data... {:?}", request);
+    let mut tries = 0;
+    let mut response;
 
-    let response = request.send().await?;
+    loop {
+        tries += 1;
+        let client = get_api_client(&state)?;
+        let request = client.get(USER_ENDPOINT);
+        log::debug!("Requesting user data... {:?}", request);
 
-    log::debug!("Received response: {:?}", response);
-    // log::debug!("Received text: {:?}", response.text().await?);
-    // return Err(UserError("foo".to_string()).into());
+        response = request.send().await?;
+        if response.status().is_client_error() && tries < 2 {
+            refresh_token(&app_handle, &state).await?;
+            continue;
+        }
+        break;
+    }
 
     let user = response.json::<User>().await?;
-
-    // TODO: Catch error and possibly refresh user token
-
     log::debug!("Received user: {:?}", user);
 
     {
@@ -127,12 +100,44 @@ pub async fn get_user(state: State<'_, Mutex<AppState>>) -> Result<User, Account
     Ok(user)
 }
 
+pub async fn refresh_token(
+    app_handle: &tauri::AppHandle,
+    state: &State<'_, Mutex<AppState>>,
+) -> Result<bool, AppError> {
+    let oauth2_client = get_outh2_client()?;
+    let refresh_token = {
+        let state = state.lock().unwrap();
+        match state.auth {
+            Some(ref auth_state) => auth_state
+                .refresh_token
+                .clone()
+                .ok_or(AuthorizationError("Missing refresh token".to_string())),
+            None => Err(AuthorizationError("Missing auth state".to_string())),
+        }
+    }?;
+
+    let token_result = oauth2_client
+        .exchange_refresh_token(&RefreshToken::new(refresh_token))
+        .request_async(async_http_client)
+        .await;
+    let token_result = match token_result {
+        Ok(token) => Ok(token),
+        Err(_err) => Err(AuthorizationError(
+            "Could not refresh access token".to_string(),
+        )),
+    }?;
+
+    store_token_result(&app_handle, &state, token_result)?;
+
+    Ok(true)
+}
+
 #[tauri::command]
 pub async fn start_oauth(
     app_handle: tauri::AppHandle,
     state: State<'_, Mutex<AppState>>,
     start_url: Option<String>,
-) -> Result<bool, AccountError> {
+) -> Result<bool, AppError> {
     log::info!("start auth in main called");
 
     let verified_start_url = match start_url {
@@ -245,23 +250,33 @@ pub async fn start_oauth(
     //     }
     //     None => None
     // };
+    //
 
+    store_token_result(&app_handle, &state, token_result)?;
+
+    Ok(true)
+}
+
+fn store_token_result(
+    app_handle: &tauri::AppHandle,
+    state: &State<'_, Mutex<AppState>>,
+    token_result: StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>,
+) -> Result<(), AppError> {
     let auth_state = AuthState {
         access_token: token_result.access_token().secret().to_string(),
         refresh_token: token_result.refresh_token().map(|x| x.secret().to_string()),
         expires_at: None,
     };
-    auth_state.save(&app_handle).unwrap();
     log::info!("Received access token: {}", auth_state.access_token);
     {
         let mut state = state.lock().unwrap();
         state.auth = Some(auth_state);
+        state.save(&app_handle)?;
     }
-
-    Ok(true)
+    Ok(())
 }
 
-fn get_outh2_client() -> Result<BasicClient, AccountError> {
+fn get_outh2_client() -> Result<BasicClient, AppError> {
     // Create an OAuth2 client by specifying the client ID, client secret, authorization URL and
     // token URL.
     let client = BasicClient::new(
@@ -276,7 +291,7 @@ fn get_outh2_client() -> Result<BasicClient, AccountError> {
     Ok(client)
 }
 
-fn get_oauth_url(client: &BasicClient) -> Result<OAuthData, AccountError> {
+fn get_oauth_url(client: &BasicClient) -> Result<OAuthData, AppError> {
     // Generate a PKCE challenge.
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
 
@@ -301,7 +316,10 @@ fn get_oauth_url(client: &BasicClient) -> Result<OAuthData, AccountError> {
 }
 
 #[tauri::command]
-pub async fn logout(state: State<'_, Mutex<AppState>>) -> Result<bool, AccountError> {
+pub async fn logout(
+    app_handle: tauri::AppHandle,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<bool, AppError> {
     log::info!("start logout in main called");
 
     let oauth2_client = get_outh2_client()?;
@@ -331,6 +349,10 @@ pub async fn logout(state: State<'_, Mutex<AppState>>) -> Result<bool, AccountEr
         let mut state = state.lock().unwrap();
         state.auth = None;
         state.user = None;
+        state.upload_url = None;
+        state.file_path = None;
+        state.message_id = None;
+        state.save(&app_handle)?;
     }
     Ok(true)
 }
