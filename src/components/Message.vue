@@ -10,25 +10,26 @@
         </ion-header>
 
         <ion-content class="ion-padding">
-            <h2>{{ message.subject }}</h2>
-            <p>von {{ message.sender }}</p>
+            <h2 v-if="message.subject">{{ message.subject }}</h2>
+            <h2 v-else><em>(kein Betreff)</em></h2>
+
+            <p>von {{ message.sender }} am {{ message.timestamp_label }}</p>
 
             <div class="ion-padding ion-text-center">
                 <ion-button :router-link="scanPath" router-direction="forward">
                     Scanne Dokument
                 </ion-button>
             </div>
+            <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
+                <ion-refresher-content></ion-refresher-content>
+            </ion-refresher>
 
             <ion-list>
-                <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
-                    <ion-refresher-content></ion-refresher-content>
-                </ion-refresher>
-
                 <ion-item v-for="attachment in store.attachments">
                     <ion-label>
                         <h2>{{ attachment.name }}</h2>
                         <p>
-                            {{ attachment.filetype }} / {{ attachment.size }} Bytes
+                            {{ attachment.filetype_label }} / {{ attachment.size_label }}
                         </p>
                     </ion-label>
                 </ion-item>

@@ -24,12 +24,19 @@ const DEFAULT_CHUNK_SIZE: usize = 4 * 1024 * 1024;
 type FoiRequestId = u64;
 
 #[derive(Clone, Serialize, Deserialize)]
+pub struct PublicBody {
+    id: u64,
+    name: String,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
 pub struct FoiRequest {
     id: FoiRequestId,
     url: String,
     title: String,
     created_at: String,
     last_message: String,
+    public_body: PublicBody,
 }
 
 pub type MessageId = u64;

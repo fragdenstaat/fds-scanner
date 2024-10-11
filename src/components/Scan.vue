@@ -10,6 +10,7 @@
         </ion-header>
         <ion-content class="ion-padding">
             <div class="ion-text-center">
+                <p v-if="errorMessage">{{ errorMessage }}</p>
                 <ion-button @click="startScan">Scan starten</ion-button>
             </div>
             <ion-toast v-if="errorMessage" :message="errorMessage" :duration="5000"></ion-toast>

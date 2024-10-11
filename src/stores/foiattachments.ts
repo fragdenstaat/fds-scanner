@@ -3,13 +3,31 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 
 
-export type FoiAttachment = {
+type FoiAttachmentApi = {
     id: number,
-    name: String,
-    filetype: String,
+    name: string,
+    filetype: string,
     size: number,
 };
 
+export type FoiAttachment = FoiAttachmentApi & {
+    filetype_label: string
+    size_label: string
+}
+
+const makeFoiAttachment = (att: FoiAttachmentApi): FoiAttachment => {
+    let filetype_label = att.filetype.toUpperCase()
+    if (att.filetype === 'application/pdf') {
+        filetype_label = 'PDF-Dokument'
+    } else if (att.filetype.startsWith('image/')) {
+        filetype_label = 'Bild'
+    }
+    return {
+        ...att,
+        filetype_label: filetype_label,
+        size_label: (att.size / 1024).toFixed(2) + ' KB',
+    }
+}
 export type FoiMessageId = number
 
 export const useFoiAttachmentsStore = defineStore('foiattachments', () => {
@@ -17,7 +35,7 @@ export const useFoiAttachmentsStore = defineStore('foiattachments', () => {
     const attachmentMap = computed(() => new Map(attachments.value.map((att) => [att.id, att])))
 
     const getAttachments = async (foimessage_id: FoiMessageId): Promise<void> => {
-        attachments.value = await invoke<FoiAttachment[]>('get_foiattachments', { foimessage_id });
+        attachments.value = (await invoke<FoiAttachmentApi[]>('get_foiattachments', { foimessage_id })).map(att => makeFoiAttachment(att));
     };
 
     const clearAttachments = () => {

@@ -11,16 +11,24 @@
 
         <ion-content class="ion-padding">
             <h2>{{ request.title }} <small>[#{{ request.id }}]</small></h2>
-            <ion-list>
-                <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
-                    <ion-refresher-content></ion-refresher-content>
-                </ion-refresher>
+            <p>vom {{ request.created_at_label }}</p>
 
+            <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
+                <ion-refresher-content></ion-refresher-content>
+            </ion-refresher>
+
+            <template v-if="store.messages.length === 0">
+                <p>Keine Postnachrichten vorhanden</p>
+            </template>
+
+            <ion-list>
                 <ion-item v-for="message in store.messages" :router-link="'/message/' + message.id"
                     router-direction="forward">
                     <ion-label>
-                        <h2>{{ message.subject }}</h2>
+                        <h2 v-if="message.subject">{{ message.subject }}</h2>
+                        <h2 v-else><em>(kein Betreff)</em></h2>
                         <p>
+                            {{ message.timestamp_label }}
                             von {{ message.sender }}
                         </p>
                     </ion-label>

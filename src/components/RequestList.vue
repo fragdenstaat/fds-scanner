@@ -23,9 +23,15 @@
                     <ion-item v-for="request in filteredRequests" :router-link="'/request/' + request.id"
                         :key="request.id" router-direction="forward" class="list-item">
                         <ion-label>
-                            <h2>{{ request.title }}</h2>
+                            <h2>
+                                {{ request.title }}
+                            </h2>
+                            <p>an {{ request.public_body.name }} [#{{ request.id }}]</p>
                             <p>
-                                [#{{ request.id }}] {{ request.created_at }}
+                                {{ request.created_at_label }}<template
+                                    v-if="request.last_message_label != request.created_at_label">,
+                                    letzte Nachricht vom {{ request.last_message_label }}</template>
+
                             </p>
                         </ion-label>
                     </ion-item>
@@ -78,6 +84,10 @@ async function handleRefresh(event: CustomEvent) {
 </script>
 
 <style>
+h2 small {
+    color: var(--ion-color-step-400, var(--ion-text-color-step-600, #999999));
+}
+
 .list-item {
     z-index: 2;
 }
