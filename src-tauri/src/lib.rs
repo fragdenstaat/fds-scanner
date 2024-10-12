@@ -11,6 +11,8 @@ use std::sync::Mutex;
 use tauri::Manager;
 use tauri_plugin_store::StoreExt;
 
+const SENTRY_DSN: &str = env!("SENTRY_DSN");
+
 #[derive(Clone)]
 struct AuthState {
     access_token: String,
@@ -124,6 +126,14 @@ where
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let _guard = sentry::init((
+        SENTRY_DSN,
+        sentry::ClientOptions {
+            release: sentry::release_name!(),
+            ..Default::default()
+        },
+    ));
+
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_log::Builder::new().build())

@@ -7,7 +7,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, State, Url};
+use tauri::{AppHandle, Emitter, State};
 
 use crate::error::{AppError, UserError};
 use crate::{AppState, UserId};
