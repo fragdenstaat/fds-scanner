@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
-use tauri::path::BaseDirectory;
 use tauri::{Emitter, Manager, State};
 use tauri_plugin_documentcamera::{DocumentCameraExt, ScanRequest};
 
