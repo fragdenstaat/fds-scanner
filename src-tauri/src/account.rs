@@ -14,12 +14,7 @@ use crate::api::get_api_client;
 use crate::error::{AppError, AuthorizationError, UserError};
 use crate::{AppState, AuthState, User};
 
-#[cfg(target_os = "ios")]
-const REDIRECT_URI: &'static str = "fragdenstaat://loggedin";
-
-#[cfg(not(target_os = "ios"))]
-const REDIRECT_URI: &str = "https://fragdenstaat.de/app/scanner/loggedin/";
-
+const REDIRECT_URI: &str = "fragdenstaat://loggedin";
 const CLIENT_ID: &str = "1nmNtPIiQ7xA1yqzZDwEmOlguNEhdnp5vQpGyfSd";
 const AUTHORIZE_ENDPOINT: &str = "https://fragdenstaat.de/account/authorize/";
 const ACCESS_TOKEN_ENDPOINT: &str = "https://fragdenstaat.de/account/token/";
@@ -127,7 +122,7 @@ pub async fn refresh_token(
         )),
     }?;
 
-    store_token_result(&app_handle, &state, token_result)?;
+    store_token_result(app_handle, state, token_result)?;
 
     Ok(true)
 }
