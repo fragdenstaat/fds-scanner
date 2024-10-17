@@ -15,7 +15,7 @@ class DocumentCameraArgs: Decodable {
 }
 
 struct ScanResponse: Encodable {
-  let success: Bool
+  let path: String?
 }
 
 class DocumentCameraPlugin: Plugin, VNDocumentCameraViewControllerDelegate {
@@ -67,12 +67,12 @@ class DocumentCameraPlugin: Plugin, VNDocumentCameraViewControllerDelegate {
       pdfDocument.write(toFile: self.pdfPath!)
     }
 
-    self.invoke?.resolve(ScanResponse(success: true))
+    self.invoke?.resolve(ScanResponse(path: self.pdfPath!))
   }
 
   func documentCameraViewControllerDidCancel(_ controller: VNDocumentCameraViewController) {
     controller.dismiss(animated: true)
-    self.invoke?.resolve(ScanResponse(success: false))
+    self.invoke?.resolve(ScanResponse(path: nil))
   }
 
   func documentCameraViewController(

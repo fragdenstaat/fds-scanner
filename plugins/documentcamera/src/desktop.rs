@@ -15,6 +15,6 @@ pub struct DocumentCamera<R: Runtime>(AppHandle<R>);
 
 impl<R: Runtime> DocumentCamera<R> {
     pub fn scan(&self, _payload: ScanRequest) -> crate::Result<ScanResponse> {
-        Ok(ScanResponse { success: false })
+        Ok(ScanResponse { path: None })
     }
 }

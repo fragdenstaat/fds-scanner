@@ -9,5 +9,5 @@ pub struct ScanRequest {
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ScanResponse {
-    pub success: bool,
+    pub path: Option<String>,
 }
