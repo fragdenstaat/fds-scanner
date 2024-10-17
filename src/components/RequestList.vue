@@ -10,8 +10,8 @@
                 </ion-buttons>
             </ion-toolbar>
             <ion-toolbar>
-                <ion-searchbar @ionInput="searchQuery = $event.target.value || ''" show-clear-button="focus" value=""
-                    placeholder="Anfrage suchen"></ion-searchbar>
+                <ion-searchbar @ion-change="runSearch" @ionInput="searchQuery = $event.target.value || ''"
+                    show-clear-button="focus" value="" placeholder="Anfrage suchen"></ion-searchbar>
             </ion-toolbar>
         </ion-header>
         <ion-content class="ion-padding">
@@ -21,7 +21,8 @@
             <ion-list>
                 <TransitionGroup name="list">
                     <ion-item v-for="request in filteredRequests" :router-link="'/request/' + request.id"
-                        :key="request.id" router-direction="forward" class="list-item">
+                        :key="request.id" router-direction="forward" class="list-item"
+                        :class="{ 'staff-request': request.staffRequest }">
                         <ion-label>
                             <h2>
                                 {{ request.title }}
@@ -50,6 +51,7 @@
 import { IonButton, IonButtons, IonContent, IonHeader, IonItem, IonLabel, IonList, IonPage, IonRefresher, IonRefresherContent, IonSearchbar, IonSpinner, IonTitle, IonToolbar } from '@ionic/vue';
 import { computed, onMounted, ref } from 'vue';
 
+import { account } from '../account.ts';
 import { useFoiRequestsStore } from '../stores/foirequests.ts';
 import { useToastMessages } from '../utils.ts';
 
@@ -69,6 +71,14 @@ const filteredRequests = computed(() => {
     });
 })
 
+function runSearch() {
+    if (account.isStaff) {
+        if (/^\d+$/.test(searchQuery.value)) {
+            store.getRequest(parseInt(searchQuery.value));
+        }
+    }
+}
+
 
 onMounted(async () => {
     await store.getRequests();
@@ -85,6 +95,10 @@ async function handleRefresh(event: CustomEvent) {
 <style>
 h2 small {
     color: var(--ion-color-step-400, var(--ion-text-color-step-600, #999999));
+}
+
+.staff-request {
+    border-left: 1px solid #999;
 }
 
 .list-item {

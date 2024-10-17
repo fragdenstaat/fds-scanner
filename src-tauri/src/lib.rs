@@ -3,9 +3,10 @@ mod account;
 mod api;
 mod error;
 mod scan;
+mod tus;
 
 use account::{get_user, logout, start_oauth};
-use api::{get_foiattachments, get_foimessages, get_foirequests, MessageId};
+use api::{get_foiattachments, get_foimessages, get_foirequest, get_foirequests, MessageId};
 use scan::{scan_document, upload_document};
 use std::sync::Mutex;
 use tauri::Manager;
@@ -140,18 +141,19 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_webauth::init())
         .plugin(tauri_plugin_documentcamera::init())
-        // .plugin(
-        //     tauri_plugin_log::Builder::new()
-        //         .target(tauri_plugin_log::Target::new(
-        //             tauri_plugin_log::TargetKind::Stdout,
-        //         ))
-        //         .build(),
-        // )
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .target(tauri_plugin_log::Target::new(
+                    tauri_plugin_log::TargetKind::Stdout,
+                ))
+                .build(),
+        )
         .invoke_handler(tauri::generate_handler![
             get_user,
             start_oauth,
             logout,
             get_foirequests,
+            get_foirequest,
             get_foimessages,
             get_foiattachments,
             scan_document,

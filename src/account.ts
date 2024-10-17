@@ -6,6 +6,7 @@ interface User {
     first_name: string;
     full_name: string;
     email: string;
+    is_staff: boolean | null;
 }
 
 type MaybeUser = User | null
@@ -35,6 +36,10 @@ class Account {
 
     get isLoggedIn() {
         return this.#loggedIn;
+    }
+
+    get isStaff() {
+        return !!this.#user?.is_staff;
     }
 
     get user() {

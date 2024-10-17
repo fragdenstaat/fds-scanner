@@ -52,7 +52,7 @@ pub type AttachmentId = u64;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct FoiAttachment {
-    id: AttachmentId,
+    pub id: AttachmentId,
     name: String,
     filetype: String,
     size: u64,
@@ -123,6 +123,23 @@ pub async fn get_foirequests(
         next = api_response.meta.next;
     }
     Ok(true)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub async fn get_foirequest(
+    app: AppHandle,
+    state: State<'_, Mutex<AppState>>,
+    request_id: FoiRequestId,
+) -> Result<(), AppError> {
+    let client = get_api_client(&state)?;
+
+    let url = format!("{}{}/", REQUEST_ENDPOINT, request_id);
+    let response = client.get(url).send().await?;
+    let api_response = response.json::<FoiRequest>().await?;
+
+    app.emit("foirequest-list", vec![api_response])?;
+
+    Ok(())
 }
 
 pub async fn get_all_objects<T>(
