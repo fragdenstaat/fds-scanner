@@ -1,15 +1,15 @@
 use reqwest::header;
 use serde::de::DeserializeOwned;
-use tus_async_client::{Client as TusClient, HttpHandler};
 
 use std::collections::HashMap;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, State};
 
-use crate::error::{AppError, UserError};
+use crate::error::{AppError, TusError, UserError};
+use crate::tus::TusClient;
 use crate::{AppState, UserId};
 use chrono::prelude::*;
 
@@ -18,8 +18,6 @@ const MESSAGE_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/message/";
 const UPLOAD_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/upload/";
 const ATTACHMENT_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/attachment/";
 const UPLOAD_URL_BASE: &str = "https://fragdenstaat.de";
-
-const DEFAULT_CHUNK_SIZE: usize = 4 * 1024 * 1024;
 
 type FoiRequestId = u64;
 
@@ -172,7 +170,7 @@ pub async fn get_foiattachments(
 
 pub fn get_tus_client(state: &State<'_, Mutex<AppState>>) -> Result<TusClient, AppError> {
     let req_client = get_api_client(state)?;
-    Ok(TusClient::new(HttpHandler::new(Arc::new(req_client))))
+    Ok(TusClient::new(req_client))
 }
 
 pub async fn create_upload(client: &TusClient, file_path: &Path) -> Result<String, AppError> {
@@ -204,12 +202,16 @@ pub async fn resume_upload(
     client: &TusClient,
     upload_url: &str,
     file_path: &Path,
-) -> Result<(), AppError> {
-    client
-        .upload_with_chunk_size(upload_url, file_path, DEFAULT_CHUNK_SIZE)
-        .await?;
-
-    Ok(())
+) -> Result<bool, AppError> {
+    let response = client.upload(upload_url, file_path).await;
+    match response {
+        Ok(_) => Ok(true),
+        Err(e) => match e {
+            // Reset the upload state if the upload URL is not found
+            TusError::NotFoundError => Ok(false),
+            _ => Err(e.into()),
+        },
+    }
 }
 
 #[derive(Serialize)]
