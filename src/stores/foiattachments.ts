@@ -16,7 +16,7 @@ export type FoiAttachment = FoiAttachmentApi & {
 }
 
 const makeFoiAttachment = (att: FoiAttachmentApi): FoiAttachment => {
-    let filetype_label = att.filetype.toUpperCase()
+    let filetype_label = att.filetype
     if (att.filetype === 'application/pdf') {
         filetype_label = 'PDF-Dokument'
     } else if (att.filetype.startsWith('image/')) {
