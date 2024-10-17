@@ -25,7 +25,8 @@
             </ion-refresher>
 
             <ion-list>
-                <ion-item v-for="attachment in store.attachments">
+                <ion-item v-for="attachment in store.attachments"
+                    :color="attachment.id === highlightAttachment ? 'success' : undefined">
                     <ion-label>
                         <h2>{{ attachment.name }}</h2>
                         <p>
@@ -66,6 +67,12 @@ const store = useFoiAttachmentsStore()
 const route = useRoute<"message">();
 const messageId = parseInt(route.params.id);
 const scanPath = `/message/${messageId}/scan`;
+
+let highlightAttachmentParam = route.query.highlight_attachment
+let highlightAttachment: number | null = null
+if (highlightAttachmentParam) {
+    highlightAttachment = parseInt(highlightAttachmentParam as string)
+}
 const loading = ref(true)
 
 const message: FoiMessage = foimessageStore.messageMap.get(messageId)!

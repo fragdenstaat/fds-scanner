@@ -23,6 +23,7 @@ import { addPluginListener, invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
+import { FoiAttachment } from '../stores/foiattachments';
 import { useToastMessages } from '../utils';
 
 useToastMessages()
@@ -116,10 +117,11 @@ async function startScan() {
     }
     console.log("Uploading document")
     loading!.message = "Lade Dokument hoch..."
+    let attachment: FoiAttachment | null = null;
     try {
-        const uploadOk = await invoke("upload_document")
-        if (!uploadOk) {
-            await showError("Kein Dokument gefunden!")
+        attachment = await invoke("upload_document")
+        if (attachment === null) {
+            await showError("Upload fehlgeschlagen!")
             return
         }
     } catch (e) {
@@ -127,7 +129,7 @@ async function startScan() {
         return
     }
     await loading.dismiss();
-    ionRouter.navigate(messagePath, 'back', 'pop');
+    ionRouter.navigate(`${messagePath}?highlight_attachment=${attachment.id}`, 'back', 'replace');
 }
 
 </script>

@@ -76,7 +76,12 @@ const routes = [
     { path: '/login/qrcode', name: 'login-qrcode', component: QrCode },
     { path: '/account', name: 'account', component: Account },
     { path: '/request/:id', name: 'request', component: Request },
-    { path: '/message/:id', name: 'message', component: Message },
+    {
+        path: '/message/:id', name: 'message', component: Message, query: {
+            highlight_attachment: Number,
+            required: false,
+        }
+    },
     { path: '/message/:id/scan/', name: 'message-scan', component: Scan },
 ];
 
