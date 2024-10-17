@@ -3,7 +3,9 @@ use std::sync::Mutex;
 use tauri::{Emitter, Manager, State};
 use tauri_plugin_documentcamera::{DocumentCameraExt, ScanRequest};
 
-use crate::api::{create_attachment, create_upload, get_tus_client, resume_upload, MessageId};
+use crate::api::{
+    create_attachment, create_upload, get_tus_client, resume_upload, FoiAttachment, MessageId,
+};
 use crate::error::AppError;
 use crate::AppState;
 
@@ -27,18 +29,23 @@ pub async fn scan_document(
 ) -> Result<bool, AppError> {
     log::info!("scan document in main called");
 
-    // Swap this with the commented code below
-    // to have a scanned PDF for testing.
-    // let file_path = app_handle
-    //     .path()
-    //     .resolve("resources/example.pdf", BaseDirectory::Resource)
-    //     .unwrap();
     let file_path = app_handle.path().app_local_data_dir()?.join("scan.pdf");
     let result = app_handle.documentcamera().scan(ScanRequest {
         path: file_path.to_str().unwrap().to_string(),
     })?;
-    if !result.success {
-        return Ok(false);
+    let file_path = match result.path {
+        Some(path) => path,
+        None => return Ok(false),
+    };
+    let file_path = PathBuf::from(file_path);
+
+    log::info!("scan document completed, file should be at {:?}", file_path);
+
+    if !file_path.exists() {
+        return Err(AppError::DocumentCameraResult(format!(
+            "File does not exist at {:?}",
+            file_path
+        )));
     }
     {
         let mut state = state.lock().unwrap();
@@ -53,7 +60,7 @@ pub async fn scan_document(
 pub async fn upload_document(
     app: tauri::AppHandle,
     state: State<'_, Mutex<AppState>>,
-) -> Result<bool, AppError> {
+) -> Result<Option<FoiAttachment>, AppError> {
     log::info!("upload document document in main called");
     let (message_id, file_path, upload_url) = {
         let state = state.lock().unwrap();
@@ -66,10 +73,18 @@ pub async fn upload_document(
 
     let (message_id, file_path) = match (message_id, file_path) {
         (Some(message_id), Some(file_path)) => (message_id, file_path),
-        _ => return Ok(false),
+        _ => {
+            log::warn!("upload_document: missing message_id or file_path");
+            return Ok(None);
+        }
     };
 
     let file_path = PathBuf::from(file_path);
+    if !file_path.exists() {
+        reset_upload_state(&app, &state)?;
+        log::warn!("upload_document: file does not exist at {:?}", file_path);
+        return Ok(None);
+    }
 
     let tus_client = get_tus_client(&state)?;
 
@@ -87,12 +102,18 @@ pub async fn upload_document(
         }
     };
 
-    resume_upload(&tus_client, &upload_url, &file_path).await?;
+    let result = resume_upload(&tus_client, &upload_url, &file_path).await?;
+    if !result {
+        reset_upload_state(&app, &state)?;
+        log::warn!("upload_document: upload does not exist at {:?}", upload_url);
+        return Ok(None);
+    }
     app.emit("scan-progress", "upload_complete")?;
+    std::fs::remove_file(&file_path)?;
 
-    create_attachment(&state, message_id, &upload_url).await?;
+    let att = create_attachment(&state, message_id, &upload_url).await?;
     app.emit("scan-progress", "attachment_created")?;
     reset_upload_state(&app, &state)?;
 
-    Ok(true)
+    Ok(Some(att))
 }
