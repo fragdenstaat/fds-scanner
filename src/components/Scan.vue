@@ -13,18 +13,19 @@
                 <p v-if="errorMessage">{{ errorMessage }}</p>
                 <ion-button @click="startScan">Scan starten</ion-button>
             </div>
-            <ion-toast v-if="errorMessage" :message="errorMessage" :duration="5000"></ion-toast>
         </ion-content>
     </ion-page>
 </template>
 
 <script setup lang="ts">
-import { IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonPage, IonTitle, IonToast, IonToolbar, loadingController, useIonRouter } from '@ionic/vue';
+import { IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, loadingController, useIonRouter } from '@ionic/vue';
 import { addPluginListener, invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
+import { useToastMessages } from '../utils';
 
+useToastMessages()
 
 const route = useRoute<"message">();
 const messageId = parseInt(route.params.id);

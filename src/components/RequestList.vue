@@ -40,7 +40,6 @@
             <div v-if="loading" class="ion-text-center">
                 <ion-spinner></ion-spinner>
             </div>
-            <ion-toast v-for="message in toastMessages" :message="message" :duration="5000"></ion-toast>
         </ion-content>
     </ion-page>
 </template>
@@ -48,7 +47,7 @@
 <script setup lang="ts">
 
 
-import { IonButton, IonButtons, IonContent, IonHeader, IonItem, IonLabel, IonList, IonPage, IonRefresher, IonRefresherContent, IonSearchbar, IonSpinner, IonTitle, IonToast, IonToolbar } from '@ionic/vue';
+import { IonButton, IonButtons, IonContent, IonHeader, IonItem, IonLabel, IonList, IonPage, IonRefresher, IonRefresherContent, IonSearchbar, IonSpinner, IonTitle, IonToolbar } from '@ionic/vue';
 import { computed, onMounted, ref } from 'vue';
 
 import { useFoiRequestsStore } from '../stores/foirequests.ts';
@@ -56,7 +55,7 @@ import { useToastMessages } from '../utils.ts';
 
 const loading = ref<boolean>(true);
 const searchQuery = ref<string>('');
-const { toastMessages } = useToastMessages();
+useToastMessages();
 
 const store = useFoiRequestsStore()
 

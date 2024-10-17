@@ -1,12 +1,26 @@
-import { onActivated, ref } from 'vue';
+import { toastController } from '@ionic/vue';
+import { onMounted } from 'vue';
 import { account } from './account.ts';
 
+
 export function useToastMessages() {
-    const toastMessages = ref<string[]>([]);
-    onActivated(() => {
-        toastMessages.value = account.clearMessages()
+    let toast: HTMLIonToastElement | null = null
+
+    onMounted(async () => {
+        let toastMessages = account.clearMessages()
+        if (toastMessages.length === 0) {
+            return
+        }
+        if (toast === null) {
+            toast = await toastController.create({
+                message: "",
+                duration: 5000,
+            });
+        }
+        toast.message = toastMessages.join('\n')
+        await toast.present();
     });
-    return { toastMessages }
+    return { toast }
 }
 
 const localeOptions = {
