@@ -35,7 +35,10 @@
                 </ion-item>
             </ion-list>
             <div v-if="loading" class="ion-text-center">
-                <ion-spinner v-if="loading"></ion-spinner>
+                <ion-spinner></ion-spinner>
+            </div>
+            <div v-if="errorMessage" class="ion-text-center">
+                <p>{{ errorMessage }}</p>
             </div>
         </ion-content>
     </ion-page>
@@ -54,11 +57,11 @@ import {
     IonSpinner,
     IonTitle, IonToolbar
 } from '@ionic/vue';
-import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { FoiRequest, useFoiRequestsStore } from '../stores/foirequests.ts';
 
 import { useFoiMessagesStore } from '../stores/foimessages.ts';
+import { useStoreLoader } from '../utils.ts';
 
 
 const foirequestStore = useFoiRequestsStore()
@@ -66,17 +69,15 @@ const store = useFoiMessagesStore()
 
 const route = useRoute<"request">();
 const requestId = parseInt(route.params.id);
-const loading = ref(true)
 
 const request: FoiRequest = foirequestStore.requestMap.get(requestId)!
 
-onMounted(async () => {
-    await store.getMessages(requestId);
-    loading.value = false;
+const { loading, errorMessage, loadStoreObjects } = useStoreLoader(() => {
+    return store.getMessages(requestId);
 });
 
 async function handleRefresh(event: CustomEvent) {
-    await store.getMessages(requestId);
+    await loadStoreObjects();
     event.target?.complete();
 }
 

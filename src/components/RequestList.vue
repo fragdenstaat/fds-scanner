@@ -41,6 +41,9 @@
             <div v-if="loading" class="ion-text-center">
                 <ion-spinner></ion-spinner>
             </div>
+            <div v-if="errorMessage" class="ion-text-center">
+                <p>{{ errorMessage }}</p>
+            </div>
         </ion-content>
     </ion-page>
 </template>
@@ -49,13 +52,12 @@
 
 
 import { IonButton, IonButtons, IonContent, IonHeader, IonItem, IonLabel, IonList, IonPage, IonRefresher, IonRefresherContent, IonSearchbar, IonSpinner, IonTitle, IonToolbar } from '@ionic/vue';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import { account } from '../account.ts';
 import { useFoiRequestsStore } from '../stores/foirequests.ts';
-import { useToastMessages } from '../utils.ts';
+import { useStoreLoader, useToastMessages } from '../utils.ts';
 
-const loading = ref<boolean>(true);
 const searchQuery = ref<string>('');
 useToastMessages();
 
@@ -79,15 +81,13 @@ function runSearch() {
     }
 }
 
-
-onMounted(async () => {
-    await store.getRequests();
-    loading.value = false;
+const { loading, errorMessage, loadStoreObjects } = useStoreLoader(() => {
+    return store.getRequests();
 });
 
 
 async function handleRefresh(event: CustomEvent) {
-    await store.getRequests();
+    await loadStoreObjects()
     event.target?.complete();
 }
 </script>

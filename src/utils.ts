@@ -1,5 +1,5 @@
 import { toastController } from '@ionic/vue';
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { account } from './account.ts';
 
 
@@ -31,4 +31,25 @@ const localeOptions = {
 
 export function toLocaleDateString(date: Date): string {
     return date.toLocaleDateString('de-DE', localeOptions)
+}
+
+export const useStoreLoader = (storeGetter: () => Promise<any>) => {
+    const loading = ref(true)
+    const errorMessage = ref("")
+
+    const loadStoreObjects = async () => {
+        loading.value = true
+        errorMessage.value = ""
+        try {
+            await storeGetter()
+        } catch (error: any) {
+            errorMessage.value = error.toString()
+        } finally {
+            loading.value = false
+        }
+    }
+
+    onMounted(loadStoreObjects)
+
+    return { loading, errorMessage, loadStoreObjects }
 }

@@ -39,7 +39,10 @@
                 </ion-item>
             </ion-list>
             <div v-if="loading" class="ion-text-center">
-                <ion-spinner v-if="loading"></ion-spinner>
+                <ion-spinner></ion-spinner>
+            </div>
+            <div v-if="errorMessage" class="ion-text-center">
+                <p>{{ errorMessage }}</p>
             </div>
         </ion-content>
     </ion-page>
@@ -56,12 +59,12 @@ import {
     IonSpinner,
     IonTitle, IonToolbar
 } from '@ionic/vue';
-import { ref } from 'vue';
 
 import { onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useFoiAttachmentsStore } from '../stores/foiattachments.ts';
 import { FoiMessage, useFoiMessagesStore } from '../stores/foimessages.ts';
+import { useStoreLoader } from '../utils.ts';
 
 
 const foimessageStore = useFoiMessagesStore()
@@ -76,9 +79,13 @@ let highlightAttachment: number | null = null
 if (highlightAttachmentParam) {
     highlightAttachment = parseInt(highlightAttachmentParam as string)
 }
-const loading = ref(true)
 
 const message: FoiMessage = foimessageStore.messageMap.get(messageId)!
+
+const { loading, errorMessage, loadStoreObjects } = useStoreLoader(() => {
+    return store.getAttachments(messageId);
+});
+
 
 onMounted(async () => {
     await store.getAttachments(messageId);
@@ -86,7 +93,7 @@ onMounted(async () => {
 });
 
 async function handleRefresh(event: CustomEvent) {
-    await store.getAttachments(messageId);
+    await loadStoreObjects()
     event.target?.complete();
 }
 
