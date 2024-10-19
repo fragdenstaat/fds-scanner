@@ -21,13 +21,13 @@ const UPLOAD_URL_BASE: &str = "https://fragdenstaat.de";
 
 type FoiRequestId = u64;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PublicBody {
     id: u64,
     name: String,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FoiRequest {
     id: FoiRequestId,
     url: String,
@@ -39,18 +39,18 @@ pub struct FoiRequest {
 
 pub type MessageId = u64;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FoiMessage {
     id: MessageId,
     timestamp: String,
     is_response: bool,
-    sender: String,
+    sender: Option<String>,
     subject: String,
 }
 
 pub type AttachmentId = u64;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FoiAttachment {
     pub id: AttachmentId,
     name: String,
@@ -58,7 +58,7 @@ pub struct FoiAttachment {
     size: u64,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Meta {
     limit: u32,
     next: Option<String>,
@@ -67,7 +67,7 @@ pub struct Meta {
     total_count: u32,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ApiResponse<T> {
     meta: Meta,
     objects: Vec<T>,
@@ -156,6 +156,9 @@ where
 
     while let Some(ref next_url) = next {
         let response = client.get(next_url).send().await?;
+        // let text = response.text().await?;
+        // log::info!("Response: {}", text);
+        // let api_response: ApiResponse<T> = serde_json::from_str(&text).unwrap();
         let api_response = response.json::<ApiResponse<T>>().await?;
 
         objects.extend_from_slice(&api_response.objects);

@@ -29,7 +29,7 @@
                         <h2 v-else><em>(kein Betreff)</em></h2>
                         <p>
                             {{ message.timestamp_label }}
-                            von {{ message.sender }}
+                            <template v-if="message.sender">von {{ message.sender }}</template>
                         </p>
                     </ion-label>
                 </ion-item>

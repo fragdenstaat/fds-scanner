@@ -13,7 +13,10 @@
             <h2 v-if="message.subject">{{ message.subject }}</h2>
             <h2 v-else><em>(kein Betreff)</em></h2>
 
-            <p>von {{ message.sender }} am {{ message.timestamp_label }}</p>
+            <p>
+                <template v-if="message.sender">von {{ message.sender }}</template>
+                am {{ message.timestamp_label }}
+            </p>
 
             <div class="ion-padding ion-text-center">
                 <ion-button :router-link="scanPath" router-direction="forward">
