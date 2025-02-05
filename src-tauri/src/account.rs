@@ -266,7 +266,7 @@ fn store_token_result(
     {
         let mut state = state.lock().unwrap();
         state.auth = Some(auth_state);
-        state.save(&app_handle)?;
+        state.save(app_handle)?;
     }
     Ok(())
 }
