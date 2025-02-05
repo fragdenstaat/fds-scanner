@@ -174,7 +174,9 @@ pub async fn get_foimessages(
     foirequest_id: FoiRequestId,
 ) -> Result<Vec<FoiMessage>, AppError> {
     let url = format!("{}?request={}&kind=post", MESSAGE_ENDPOINT, foirequest_id);
-    let objects = get_all_objects(url, state).await?;
+    let mut objects: Vec<FoiMessage> = get_all_objects(url, state).await?;
+    objects.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+    objects.reverse();
     Ok(objects)
 }
 
