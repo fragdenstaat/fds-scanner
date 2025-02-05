@@ -6,22 +6,33 @@
             </ion-toolbar>
         </ion-header>
         <ion-content class="ion-padding">
-            <template v-if="loginStarted">
-                <ion-loading message="Login gestartet..."></ion-loading>
-            </template>
-            <div v-if="!loginStarted" class="ion-text-center">
-                <ion-button @click="startLogin">Einloggen mit FragDenStaat.de</ion-button>
-                <hr />
-                <p>Zeigt FragDenStaat.de Ihnen einen QR Code an?</p>
-                <ion-button :router-link="'/login/qrcode'">Login mit QR Code</ion-button>
-            </div>
+            <ion-grid>
+                <ion-row class="ion-justify-content-center">
+                    <ion-col size-xs="9" size-md="9">
+                        <template v-if="loginStarted">
+                            <ion-loading message="Login gestartet..."></ion-loading>
+                        </template>
+                        <div v-if="!loginStarted" class="ion-text-center">
+                            <ion-button @click="startLogin">Einloggen mit FragDenStaat.de</ion-button>
+                            <hr class="ion-margin-vertical" />
+                            <p>Zeigt FragDenStaat.de Ihnen einen QR Code an?</p>
+
+                            <ion-button :router-link="'/login/qrcode'">
+                                <ion-icon aria-hidden="true" :icon="qrCodeOutline" class="ion-margin-end"></ion-icon>
+                                Login mit QR Code
+                            </ion-button>
+                        </div>
+                    </ion-col>
+                </ion-row>
+            </ion-grid>
         </ion-content>
     </ion-page>
 </template>
 
 <script setup lang="ts">
 
-import { alertController, IonButton, IonContent, IonHeader, IonLoading, IonPage, IonTitle, IonToolbar, useIonRouter } from '@ionic/vue';
+import { alertController, IonButton, IonCol, IonContent, IonGrid, IonHeader, IonIcon, IonLoading, IonPage, IonRow, IonTitle, IonToolbar, useIonRouter } from '@ionic/vue';
+import { qrCodeOutline } from 'ionicons/icons';
 import { ref } from 'vue';
 
 import { account } from '../account.ts';
@@ -56,3 +67,16 @@ async function startLogin() {
 }
 
 </script>
+
+<style>
+ion-grid {
+    height: 100%;
+}
+
+ion-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+</style>
