@@ -41,9 +41,11 @@ struct AppState {
     upload_url: Option<String>,
 }
 
+const STORE_PATH: &str = "store.bin";
+
 impl AppState {
-    fn load(app_handle: &tauri::AppHandle) -> Self {
-        let store = app_handle.store_builder("store.bin").build();
+    fn load(app_handle: &tauri::AppHandle) -> Result<Self, tauri_plugin_store::Error> {
+        let store = app_handle.store(STORE_PATH)?;
 
         let access_token = store.get("access_token");
         let auth_state = access_token.map(|token| AuthState {
@@ -53,7 +55,7 @@ impl AppState {
                 .map(|v| v.as_str().unwrap().to_string()),
             expires_at: store.get("expires_at").map(|v| v.as_u64().unwrap()),
         });
-        AppState {
+        Ok(AppState {
             auth: auth_state,
             user: None,
             message_id: store.get("message_id").map(|v| v.as_u64().unwrap()),
@@ -63,11 +65,11 @@ impl AppState {
             upload_url: store
                 .get("upload_url")
                 .map(|v| v.as_str().unwrap().to_string()),
-        }
+        })
     }
 
     fn save(&self, app_handle: &tauri::AppHandle) -> Result<(), tauri_plugin_store::Error> {
-        let store = app_handle.store_builder("store.bin").build();
+        let store = app_handle.store(STORE_PATH)?;
 
         // Note that values must be serde_json::Value instances,
         // otherwise, they will not be compatible with the JavaScript bindings.
@@ -160,7 +162,7 @@ pub fn run() {
             upload_document,
         ])
         .setup(|app| {
-            app.manage(Mutex::new(AppState::load(app.handle())));
+            app.manage(Mutex::new(AppState::load(app.handle())?));
             Ok(())
         });
 
