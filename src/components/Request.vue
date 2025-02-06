@@ -27,6 +27,9 @@
             </template>
 
             <ion-list>
+                <ion-list-header v-if="store.messages.length > 0">
+                    <ion-label>Bisherige Postnachrichten</ion-label>
+                </ion-list-header>
                 <ion-item v-for="message in store.messages" :router-link="'/message/' + message.id"
                     router-direction="forward">
                     <ion-label>
