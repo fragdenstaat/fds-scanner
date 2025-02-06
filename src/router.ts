@@ -41,6 +41,12 @@ export interface RouteNamedMap {
         { id: number | string }, // raw value
         { id: string } // normalized value
     >
+    messageCreate: RouteRecordInfo<
+        'request',
+        '/request/:id/create-message',
+        { id: number | string }, // raw value
+        { id: string } // normalized value
+    >
     message: RouteRecordInfo<
         'message',
         '/message/:id',
@@ -65,6 +71,7 @@ declare module 'vue-router' {
 import Account from './components/Account.vue';
 import Login from './components/Login.vue';
 import Message from './components/Message.vue';
+import MessageCreate from './components/MessageCreate.vue';
 import QrCode from './components/QrCode.vue';
 import Request from './components/Request.vue';
 import RequestList from './components/RequestList.vue';
@@ -76,6 +83,7 @@ const routes = [
     { path: '/login/qrcode', name: 'login-qrcode', component: QrCode },
     { path: '/account', name: 'account', component: Account },
     { path: '/request/:id', name: 'request', component: Request },
+    { path: '/request/:id/create-message', name: 'create-message', component: MessageCreate },
     {
         path: '/message/:id', name: 'message', component: Message, query: {
             highlight_attachment: Number,

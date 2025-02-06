@@ -17,6 +17,11 @@
                 <ion-refresher-content></ion-refresher-content>
             </ion-refresher>
 
+
+            <ion-button :router-link="createMessageUrl" router-direction="forward">
+                Neue Postnachricht anlegen
+            </ion-button>
+
             <template v-if="store.messages.length === 0">
                 <p>Keine Postnachrichten vorhanden</p>
             </template>
@@ -58,9 +63,8 @@ import {
     IonTitle, IonToolbar
 } from '@ionic/vue';
 import { useRoute } from 'vue-router';
-import { FoiRequest, useFoiRequestsStore } from '../stores/foirequests.ts';
-
 import { useFoiMessagesStore } from '../stores/foimessages.ts';
+import { FoiRequest, useFoiRequestsStore } from '../stores/foirequests.ts';
 import { useStoreLoader } from '../utils.ts';
 
 
@@ -69,6 +73,8 @@ const store = useFoiMessagesStore()
 
 const route = useRoute<"request">();
 const requestId = parseInt(route.params.id);
+
+const createMessageUrl = `/request/${requestId}/create-message/`;
 
 const request: FoiRequest = foirequestStore.requestMap.get(requestId)!
 
