@@ -52,7 +52,8 @@ import {
     IonPage,
     IonSegment,
     IonSegmentButton,
-    IonTitle, IonToolbar
+    IonTitle, IonToolbar,
+    useIonRouter
 } from '@ionic/vue';
 import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
@@ -62,10 +63,17 @@ import { FoiRequest, useFoiRequestsStore } from '../stores/foirequests.ts';
 const foirequestStore = useFoiRequestsStore()
 const route = useRoute<"create-message">();
 const requestId = parseInt(route.params.id);
+const ionRouter = useIonRouter();
 const today = new Date().toISOString();
 
-const request: FoiRequest = foirequestStore.requestMap.get(requestId)!
-const minDate = request.created_at_date
+let request: FoiRequest
+try {
+    request = await foirequestStore.getRequest(requestId);
+} catch (e) {
+    ionRouter.replace("/");
+}
+
+const minDate = computed(() => request.created_at_date)
 
 const letterSent = ref(0)
 const receivedDate = ref(today)
