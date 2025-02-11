@@ -3,7 +3,7 @@
         <ion-header>
             <ion-toolbar>
                 <ion-buttons slot="start">
-                    <ion-back-button text="Zurück"></ion-back-button>
+                    <ion-back-button :default-href="`/request/${requestId}/`" text="Zurück"></ion-back-button>
                 </ion-buttons>
                 <ion-title>Anfrage</ion-title>
             </ion-toolbar>
@@ -27,7 +27,7 @@
             <!-- Behörde wählen? -->
 
             <p>
-                {dateLabel}
+                {{ dateLabel }}
             </p>
             <ion-datetime locale="de-DE" presentation="date" v-model="receivedDate" :min="minDate"
                 :max="today"></ion-datetime>

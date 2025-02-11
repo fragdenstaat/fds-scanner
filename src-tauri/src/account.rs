@@ -16,6 +16,7 @@ use crate::{AppState, AuthState, User};
 
 const REDIRECT_URI: &str = "fragdenstaat://loggedin";
 const CLIENT_ID: &str = "1nmNtPIiQ7xA1yqzZDwEmOlguNEhdnp5vQpGyfSd";
+const HOSTNAME: &str = "fragdenstaat.de";
 const AUTHORIZE_ENDPOINT: &str = "https://fragdenstaat.de/account/authorize/";
 const ACCESS_TOKEN_ENDPOINT: &str = "https://fragdenstaat.de/account/token/";
 const REVOKE_TOKEN_ENDPOINT: &str = "https://fragdenstaat.de/account/revoke_token/";
@@ -138,7 +139,7 @@ pub async fn start_oauth(
     let verified_start_url = match start_url {
         Some(url) => {
             let url = Url::parse(url.as_str())?;
-            if url.host_str() != Some("fragdenstaat.de") {
+            if url.host_str() != Some(HOSTNAME) {
                 return Err(AuthorizationError("Invalid start URL".to_string()).into());
             }
             Some(url)

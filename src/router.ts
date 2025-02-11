@@ -17,13 +17,13 @@ export interface RouteNamedMap {
     >
     login: RouteRecordInfo<
         'login',
-        '/login',
+        '/login/',
         Record<never, never>,
         Record<never, never>
     >
     qrcode: RouteRecordInfo<
         'login-qrcode',
-        '/login/qrcode',
+        '/login/qrcode/',
         Record<never, never>,
         Record<never, never>
     >
@@ -37,27 +37,33 @@ export interface RouteNamedMap {
     // Note you can name them whatever you want
     request: RouteRecordInfo<
         'request',
-        '/request/:id',
+        '/request/:id/',
         { id: number | string }, // raw value
         { id: string } // normalized value
     >
-    messageCreate: RouteRecordInfo<
+    'create-message': RouteRecordInfo<
         'request',
-        '/request/:id/create-message',
+        '/request/:id/create-message/',
         { id: number | string }, // raw value
         { id: string } // normalized value
     >
     message: RouteRecordInfo<
         'message',
-        '/message/:id',
+        '/message/:id/',
         { id: number | string }, // raw value
         { id: string } // normalized value
     >
     scan: RouteRecordInfo<
         'message-scan',
-        '/message/:id/scan',
+        '/message/:id/scan/',
         { id: number | string }, // raw value
         { id: string } // normalized value
+    >
+    'not-found': RouteRecordInfo<
+        'not-found',
+        '/:pathMatch(.*)*',
+        Record<never, never>,
+        Record<never, never>
     >
 }
 
@@ -79,18 +85,19 @@ import Scan from './components/Scan.vue';
 
 const routes = [
     { path: '/', name: 'home', component: RequestList },
-    { path: '/login', name: 'login', component: Login },
-    { path: '/login/qrcode', name: 'login-qrcode', component: QrCode },
-    { path: '/account', name: 'account', component: Account },
-    { path: '/request/:id', name: 'request', component: Request },
-    { path: '/request/:id/create-message', name: 'create-message', component: MessageCreate },
+    { path: '/login/', name: 'login', component: Login },
+    { path: '/login/qrcode/', name: 'login-qrcode', component: QrCode },
+    { path: '/account/', name: 'account', component: Account },
+    { path: '/request/:id/', name: 'request', component: Request },
+    { path: '/request/:id/create-message/', name: 'create-message', component: MessageCreate },
     {
-        path: '/message/:id', name: 'message', component: Message, query: {
+        path: '/message/:id/', name: 'message', component: Message, query: {
             highlight_attachment: Number,
             required: false,
         }
     },
     { path: '/message/:id/scan/', name: 'message-scan', component: Scan },
+    { path: '/:pathMatch(.*)*', name: 'not-found', redirect: "/" },
 ];
 
 const router = createRouter({

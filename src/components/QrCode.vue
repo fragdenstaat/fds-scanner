@@ -4,7 +4,7 @@
             <ion-toolbar>
                 <!-- <ion-title>QR-Code-Login</ion-title> -->
                 <ion-buttons slot="start">
-                    <ion-back-button text="Abbrechen"></ion-back-button>
+                    <ion-back-button default-href="/login/" text="Abbrechen"></ion-back-button>
                 </ion-buttons>
             </ion-toolbar>
         </ion-header>

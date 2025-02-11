@@ -35,5 +35,17 @@
     "resources": [
       "resources/example.pdf"
     ]
+  },
+  "plugins": {
+    "deep-link": {
+      "mobile": [
+        {
+          "host": "fragdenstaat.de",
+          "pathPrefix": [
+            "/app/scanner/deep/"
+          ]
+        }
+      ]
+    }
   }
 }

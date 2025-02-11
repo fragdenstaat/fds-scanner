@@ -2,6 +2,11 @@
     <ion-page>
         <ion-header>
             <ion-toolbar>
+                <ion-buttons slot="start">
+                    <ion-button :router-link="'/account'">
+                        Info
+                    </ion-button>
+                </ion-buttons>
                 <ion-title>Anfragen</ion-title>
                 <ion-buttons slot="end">
                     <ion-button :router-link="'/account'">
@@ -76,7 +81,7 @@ const filteredRequests = computed(() => {
 function runSearch() {
     if (account.isStaff) {
         if (/^\d+$/.test(searchQuery.value)) {
-            store.getRequest(parseInt(searchQuery.value));
+            store.getRequest(parseInt(searchQuery.value), true);
         }
     }
 }

@@ -43,6 +43,7 @@ sentry = { version = "0.34.0", default-features = false, features = [
     "panic",
     "reqwest",
 ] }
+tauri-plugin-deep-link = "2"
 
 [profile.dev]
 incremental = true # Compile your binary in smaller steps.

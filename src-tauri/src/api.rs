@@ -20,6 +20,7 @@ const ATTACHMENT_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/attachment/";
 const UPLOAD_URL_BASE: &str = "https://fragdenstaat.de";
 
 type FoiRequestId = u64;
+type FoiMessageId = u64;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PublicBody {
@@ -42,6 +43,7 @@ pub type MessageId = u64;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FoiMessage {
     id: MessageId,
+    request: String,
     timestamp: String,
     is_response: bool,
     sender: Option<String>,
@@ -127,19 +129,16 @@ pub async fn get_foirequests(
 
 #[tauri::command(rename_all = "snake_case")]
 pub async fn get_foirequest(
-    app: AppHandle,
     state: State<'_, Mutex<AppState>>,
     request_id: FoiRequestId,
-) -> Result<(), AppError> {
+) -> Result<FoiRequest, AppError> {
     let client = get_api_client(&state)?;
 
     let url = format!("{}{}/", REQUEST_ENDPOINT, request_id);
     let response = client.get(url).send().await?;
     let api_response = response.json::<FoiRequest>().await?;
 
-    app.emit("foirequest-list", vec![api_response])?;
-
-    Ok(())
+    Ok(api_response)
 }
 
 pub async fn get_all_objects<T>(
@@ -181,9 +180,23 @@ pub async fn get_foimessages(
 }
 
 #[tauri::command(rename_all = "snake_case")]
+pub async fn get_foimessage(
+    state: State<'_, Mutex<AppState>>,
+    foimessage_id: FoiMessageId,
+) -> Result<FoiMessage, AppError> {
+    let client = get_api_client(&state)?;
+
+    let url = format!("{}{}/", MESSAGE_ENDPOINT, foimessage_id);
+    let response = client.get(url).send().await?;
+    let api_response = response.json::<FoiMessage>().await?;
+
+    Ok(api_response)
+}
+
+#[tauri::command(rename_all = "snake_case")]
 pub async fn get_foiattachments(
     state: State<'_, Mutex<AppState>>,
-    foimessage_id: u32,
+    foimessage_id: FoiMessageId,
 ) -> Result<Vec<FoiAttachment>, AppError> {
     let url = format!("{}?belongs_to={}", ATTACHMENT_ENDPOINT, foimessage_id);
     let objects = get_all_objects(url, state).await?;

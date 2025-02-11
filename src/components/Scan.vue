@@ -4,7 +4,7 @@
             <ion-toolbar>
                 <ion-title>Dokumentenscan</ion-title>
                 <ion-buttons slot="start">
-                    <ion-back-button text="Zurück"></ion-back-button>
+                    <ion-back-button :default-href="messagePath" text="Zurück"></ion-back-button>
                 </ion-buttons>
             </ion-toolbar>
         </ion-header>
@@ -102,7 +102,7 @@ async function startScan() {
         await showError(e!.toString())
         return
     }
-    loading.message = "Start Scan..."
+    loading.message = "Starte Scan..."
     console.log("Starting scan")
     try {
         const scanOk = await invoke("scan_document", { message_id: messageId })

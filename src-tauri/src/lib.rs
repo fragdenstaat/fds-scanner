@@ -6,7 +6,9 @@ mod scan;
 mod tus;
 
 use account::{get_user, logout, start_oauth};
-use api::{get_foiattachments, get_foimessages, get_foirequest, get_foirequests, MessageId};
+use api::{
+    get_foiattachments, get_foimessage, get_foimessages, get_foirequest, get_foirequests, MessageId,
+};
 use scan::{scan_document, upload_document};
 use std::sync::Mutex;
 use tauri::Manager;
@@ -138,6 +140,7 @@ pub fn run() {
     ));
 
     let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
@@ -157,6 +160,7 @@ pub fn run() {
             get_foirequests,
             get_foirequest,
             get_foimessages,
+            get_foimessage,
             get_foiattachments,
             scan_document,
             upload_document,

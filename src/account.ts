@@ -15,6 +15,7 @@ class Account {
     #loggedIn: boolean = false;
     #user: User | null = null;
     #messages: string[] = [];
+    #deepUrl: string | null = null;
 
     constructor() {
         this.#loggedIn = false;
@@ -34,6 +35,24 @@ class Account {
         return false
     }
 
+    setDeepUrl(url: string | undefined) {
+        if (url !== undefined) {
+            this.#deepUrl = url
+        }
+    }
+
+    getNextPath(): string {
+        if (this.#deepUrl !== null) {
+            let url = this.#deepUrl
+            return getDeepPath(url)
+        }
+        return "/"
+    }
+
+    get deepUrl() {
+        return this.#deepUrl
+    }
+
     get isLoggedIn() {
         return this.#loggedIn;
     }
@@ -47,7 +66,18 @@ class Account {
     }
 
     async startLogin(startUrl: string | null = null): Promise<string | null> {
+        if (startUrl === null && this.#deepUrl !== null) {
+            let deepUrl = new URL(this.#deepUrl)
+            let deepStartUrl = deepUrl.searchParams.get("start_url")
+            if (deepStartUrl !== null) {
+                startUrl = deepStartUrl
+                // Set start_url param as login start and remove from deep url
+                deepUrl.searchParams.delete("start_url")
+                this.#deepUrl = deepUrl.toString()
+            }
+        }
         try {
+            console.log("Starting OAuth with start_url:", startUrl)
             let response = await invoke('start_oauth', { start_url: startUrl })
             console.log('OAuth completed!', response)
             if (response) {
@@ -93,6 +123,14 @@ class Account {
 }
 
 export const account = new Account()
+
+const BASE_PATH = "/app/scanner/deep"
+
+export const getDeepPath = (deepUrl: string) => {
+    let url = new URL(deepUrl);
+    let path = url.pathname.replace(BASE_PATH, "");
+    return path + url.search
+}
 
 router.beforeEach((to, _from, next) => {
     if (!to.path.startsWith('/login') && !account.isLoggedIn) next({ name: 'login' })

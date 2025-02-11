@@ -44,17 +44,30 @@ export const useFoiRequestsStore = defineStore('foirequests', () => {
         return await invoke('get_foirequests');
     };
 
+    const addFoirequest = (request: FoiRequestApi): FoiRequest => {
+        if (!requestMap.value.has(request.id)) {
+            let foirequest = makeFoiRequest(request, staffRequests.has(request.id))
+            requests.value.push(foirequest);
+            return foirequest
+        }
+        return requestMap.value.get(request.id)!
+    }
+
     const staffRequests = new Set<number>()
 
-    const getRequest = async (foirequestId: number): Promise<void> => {
+    const getRequest = async (foirequestId: number, isStaff: boolean = false): Promise<FoiRequest> => {
         if (requestMap.value.has(foirequestId)) {
-            return
+            return requestMap.value.get(foirequestId)!
         }
-        staffRequests.add(foirequestId)
+        if (isStaff) {
+            staffRequests.add(foirequestId)
+        }
         try {
-            await invoke('get_foirequest', { request_id: foirequestId })
+            let foirequest = await invoke<Promise<FoiRequestApi>>('get_foirequest', { request_id: foirequestId })
+            return addFoirequest(foirequest)
         } catch (error) {
             console.error('Error getting request!', error)
+            throw error
         }
     }
 
@@ -63,11 +76,9 @@ export const useFoiRequestsStore = defineStore('foirequests', () => {
 
     listen<FoiRequestApi[]>('foirequest-list', (event) => {
         event.payload.map((request) => {
-            if (!requestMap.value.has(request.id)) {
-                requests.value.push(makeFoiRequest(request, staffRequests.has(request.id)));
-            }
+            addFoirequest(request)
         });
     });
 
-    return { requests, requestMap, getRequests, getRequest }
+    return { requests, getRequests, getRequest }
 })
