@@ -6,25 +6,26 @@ This is a Tauri 2.0 mobile application using Vue and Ionic Framework.
 
 See [Tauri Prerequesites](https://tauri.app/start/prerequisites/)
 
-Set
+## Development Android
+
+```
+pnpm tauri android dev
+```
 
 ## Distribution
 
 See `.env-exmaple` for the required environment variables.
 
+Set new version in `tauri.conf.json`, `src-tauri/Cargo.toml` and `package.json`.
+
 ### iOS
-
-
 
 ```bash
 pnpm tauri ios init
-script/build-ios.sh
+script/build_ios.sh
 ```
 
 ### Android
-
-pnpm tauri android init
-
 
 ```bash
 pnpm tauri android init
@@ -32,4 +33,23 @@ pnpm tauri icon public/fds-scanner.png --ios-color "#fff"
 # Follow instructions to configure signing
 # https://tauri.app/distribute/sign/android/#configure-the-signing-key
 pnpm tauri android build
+```
+
+## Documentation
+
+### Login flow with deep link
+
+```mermaid
+flowchart TD
+    A[Desktop post upload] -->|Scan QR Code| C{Phone has app}
+    C -->|App not installed| D[Open web page with App Store Link]
+    D -->|Install app| W[Open app]
+    W -->|Scan QR Code from app| G[Deep link logs in]
+    W -->|Login without QR Code| Y[Requests interface]
+    C -->|App installed| E[App opens with deep link]
+    E --> F{User logged in?}
+    F -->|Not logged in| G
+    F -->|Logged in| Z
+    Y -->|Find request and message|Z
+    G --> Z[Scan]
 ```
