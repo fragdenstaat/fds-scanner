@@ -128,13 +128,13 @@ pub async fn refresh_token(
     Ok(true)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn start_oauth(
     app_handle: tauri::AppHandle,
     state: State<'_, Mutex<AppState>>,
     start_url: Option<String>,
 ) -> Result<bool, AppError> {
-    log::info!("start auth in main called");
+    log::info!("start auth in main called with start_url {:?}", start_url);
 
     let verified_start_url = match start_url {
         Some(url) => {
@@ -152,10 +152,17 @@ pub async fn start_oauth(
 
     let auth_url = match verified_start_url {
         Some(url) => {
+            // Convert auth URL to absolute path with query params
+            // and append as next parameter to start URL
+            let absolute_auth_url = format!(
+                "{}?{}",
+                auth_data.auth_url.path(),
+                auth_data.auth_url.query().unwrap_or("")
+            );
             let mut auth_url = url;
             auth_url
                 .query_pairs_mut()
-                .append_pair("next", auth_data.auth_url.as_str());
+                .append_pair("next", absolute_auth_url.as_str());
             auth_url
         }
         None => auth_data.auth_url,
