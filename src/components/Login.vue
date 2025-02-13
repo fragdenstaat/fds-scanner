@@ -33,7 +33,7 @@
 
 import { alertController, IonButton, IonCol, IonContent, IonGrid, IonHeader, IonIcon, IonLoading, IonPage, IonRow, IonTitle, IonToolbar, useIonRouter } from '@ionic/vue';
 import { qrCodeOutline } from 'ionicons/icons';
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 
 import { account } from '../account.ts';
 
@@ -43,6 +43,12 @@ useToastMessages();
 
 const ionRouter = useIonRouter();
 let loginStarted = ref(false);
+
+onMounted(() => {
+    if (account.startLoginOnMount()) {
+        startLogin();
+    }
+});
 
 async function startLogin() {
     loginStarted.value = true;

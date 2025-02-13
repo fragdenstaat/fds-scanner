@@ -49,8 +49,11 @@ class Account {
         return "/"
     }
 
-    get deepUrl() {
-        return this.#deepUrl
+    startLoginOnMount(): boolean {
+        if (!this.isLoggedIn && this.getNextPath() !== "/") {
+            return true
+        }
+        return false
     }
 
     get isLoggedIn() {
