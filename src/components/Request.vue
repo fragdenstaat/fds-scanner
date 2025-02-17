@@ -42,6 +42,7 @@
                                 <template v-if="message.sender">von {{ message.sender }}</template>
                             </p>
                         </ion-label>
+                        <ion-badge v-if="message.is_draft" slot="end">Entwurf</ion-badge>
                     </ion-item>
                 </ion-list>
                 <div v-if="loading" class="ion-text-center">
@@ -101,6 +102,4 @@ async function handleRefresh(event: CustomEvent) {
     await loadStoreObjects();
     event.target?.complete();
 }
-
-
 </script>

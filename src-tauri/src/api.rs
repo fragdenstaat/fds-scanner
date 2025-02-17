@@ -46,6 +46,7 @@ pub struct FoiMessage {
     request: String,
     timestamp: String,
     is_response: bool,
+    is_draft: bool,
     sender: Option<String>,
     subject: String,
 }

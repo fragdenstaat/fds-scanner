@@ -8,7 +8,8 @@ type FoiMessageApi = {
     id: number,
     request: String,
     timestamp: string,
-    is_response: string,
+    is_response: boolean,
+    is_draft: boolean,
     sender: string,
     subject: string,
 };

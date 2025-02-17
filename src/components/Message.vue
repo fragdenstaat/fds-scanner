@@ -18,6 +18,7 @@
                     <template v-if="message.sender">von {{ message.sender }}</template>
                     am {{ message.timestamp_label }}
                 </p>
+                <ion-badge v-if="message.is_draft">Entwurf</ion-badge>
 
                 <div class="ion-padding ion-text-center">
                     <ion-button :router-link="scanPath" router-direction="forward">
