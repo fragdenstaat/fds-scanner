@@ -16,6 +16,7 @@ class Account {
     #user: User | null = null;
     #messages: string[] = [];
     #deepUrl: string | null = null;
+    #mountedWithDeepUrl: boolean = false;
 
     constructor() {
         this.#loggedIn = false;
@@ -35,10 +36,17 @@ class Account {
         return false
     }
 
-    setDeepUrl(url: string | undefined) {
+    setDeepUrl(url: string | undefined, onMount: boolean = false) {
         if (url !== undefined) {
             this.#deepUrl = url
+            if (onMount) {
+                this.#mountedWithDeepUrl = true
+            }
         }
+    }
+
+    mountedWithDeepUrl(): boolean {
+        return this.#mountedWithDeepUrl
     }
 
     getNextPath(): string {
