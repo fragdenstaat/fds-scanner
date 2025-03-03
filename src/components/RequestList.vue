@@ -15,8 +15,8 @@
                 </ion-buttons>
             </ion-toolbar>
             <ion-toolbar>
-                <ion-searchbar @ion-change="runSearch" @ionInput="searchQuery = $event.target.value || ''"
-                    show-clear-button="focus" value="" placeholder="Anfrage suchen"></ion-searchbar>
+                <ion-searchbar @ionChange="runSearch" v-model="searchQuery" show-clear-button="focus"
+                    show-cancel-button="focus" value="" placeholder="Anfrage suchen"></ion-searchbar>
             </ion-toolbar>
         </ion-header>
         <ion-content class="ion-padding">
@@ -43,7 +43,7 @@
                     </ion-item>
                 </TransitionGroup>
             </ion-list>
-            <div v-if="loading" class="ion-text-center">
+            <div v-if="initialLoading" class="ion-text-center">
                 <ion-spinner></ion-spinner>
             </div>
             <div v-if="errorMessage" class="ion-text-center">
@@ -67,12 +67,13 @@ const searchQuery = ref<string>('');
 useToastMessages();
 
 const store = useFoiRequestsStore()
+const initialLoading = ref(true);
 
 const filteredRequests = computed(() => {
+    if (searchQuery.value === '') {
+        return store.requests;
+    }
     return store.requests.filter((request) => {
-        if (searchQuery.value === '') {
-            return true;
-        }
         return request.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
             request.id.toString().startsWith(searchQuery.value);
     });
@@ -86,14 +87,17 @@ function runSearch() {
     }
 }
 
-const { loading, errorMessage, loadStoreObjects } = useStoreLoader(() => {
-    return store.getRequests();
+const { errorMessage, loadStoreObjects } = useStoreLoader(async () => {
+    const requests = await store.getRequests();
+    initialLoading.value = false;
+    return requests
 });
 
 
-async function handleRefresh(event: CustomEvent) {
-    await loadStoreObjects()
-    event.target?.complete();
+function handleRefresh(event: CustomEvent) {
+    loadStoreObjects().finally(() => {
+        event.detail.complete();
+    });
 }
 </script>
 
