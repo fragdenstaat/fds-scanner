@@ -24,16 +24,8 @@ import { listen } from '@tauri-apps/api/event';
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { FoiAttachment } from '../stores/foiattachments';
+import { FoiMessage, useFoiMessagesStore } from '../stores/foimessages';
 import { useToastMessages } from '../utils';
-
-useToastMessages()
-
-const route = useRoute<"message">();
-const messageId = parseInt(route.params.id);
-const messagePath = `/message/${messageId}/`;
-
-const ionRouter = useIonRouter();
-const errorMessage = ref<string>("");
 
 interface PdfProgress {
     page: number
@@ -43,6 +35,26 @@ interface PdfProgress {
 interface UploadProgress {
     event: string
     payload: string
+}
+
+useToastMessages()
+
+const foimessageStore = useFoiMessagesStore()
+const route = useRoute<"message">();
+
+const isDraft = route.params.message === "draft";
+const messageId = parseInt(route.params.id);
+const messagePath = `/${route.params.message}/${messageId}/`;
+
+const ionRouter = useIonRouter();
+const errorMessage = ref<string>("");
+
+
+let message: FoiMessage
+try {
+    message = await foimessageStore.getMessage(messageId, isDraft);
+} catch (e) {
+    errorMessage.value = (e as Error).toString()
 }
 
 function handlePluginEvent(event: PdfProgress) {
@@ -76,7 +88,7 @@ onMounted(async () => {
         }
     });
 
-    await startScan();
+    await startScan(message);
 });
 
 async function showError(message: string) {
@@ -86,7 +98,7 @@ async function showError(message: string) {
 }
 
 
-async function startScan() {
+async function startScan(message: FoiMessage) {
     // Is there anything left to upload?
     loading.message = "Vorbereitung..."
     await loading.present();
@@ -105,7 +117,7 @@ async function startScan() {
     loading.message = "Starte Scan..."
     console.log("Starting scan")
     try {
-        const scanOk = await invoke("scan_document", { message_id: messageId })
+        const scanOk = await invoke("scan_document", { message_resource_uri: message.resource_uri })
         if (!scanOk) {
             console.warn("Scan canceled")
             await showError("Scan canceled")

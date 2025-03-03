@@ -32,8 +32,7 @@
                     <ion-list-header v-if="store.messages.length > 0">
                         <ion-label>Bisherige Postnachrichten</ion-label>
                     </ion-list-header>
-                    <ion-item v-for="message in store.messages" :router-link="'/message/' + message.id"
-                        router-direction="forward">
+                    <ion-item v-for="message in store.messages" :router-link="message.path" router-direction="forward">
                         <ion-label>
                             <h2 v-if="message.subject">{{ message.subject }}</h2>
                             <h2 v-else><em>(kein Betreff)</em></h2>
@@ -59,6 +58,7 @@
 <script setup lang="ts">
 import {
     IonBackButton,
+    IonBadge,
     IonButtons,
     IonContent, IonHeader,
     IonItem,
@@ -70,7 +70,7 @@ import {
     IonSpinner,
     IonTitle, IonToolbar
 } from '@ionic/vue';
-import { ref } from 'vue';
+import { onUnmounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useFoiMessagesStore } from '../stores/foimessages.ts';
 import { FoiRequest, useFoiRequestsStore } from '../stores/foirequests.ts';
@@ -102,4 +102,7 @@ async function handleRefresh(event: CustomEvent) {
     await loadStoreObjects();
     event.target?.complete();
 }
+onUnmounted(() => {
+    store.clearMessages();
+});
 </script>

@@ -49,15 +49,15 @@ export interface RouteNamedMap {
     >
     message: RouteRecordInfo<
         'message',
-        '/message/:id/',
-        { id: number | string }, // raw value
-        { id: string } // normalized value
+        '/:message(message|draft)/:id/',
+        { id: number | string, message: "message" | "draft" }, // raw value
+        { id: string, message: "message" | "draft" } // normalized value
     >
     scan: RouteRecordInfo<
         'message-scan',
-        '/message/:id/scan/',
-        { id: number | string }, // raw value
-        { id: string } // normalized value
+        '/:message(message|draft)/:id/scan/',
+        { id: number | string, message: "message" | "draft" }, // raw value
+        { id: string, message: "message" | "draft" } // normalized value
     >
     'not-found': RouteRecordInfo<
         'not-found',
@@ -91,12 +91,12 @@ const routes = [
     { path: '/request/:id/', name: 'request', component: Request },
     { path: '/request/:id/create-message/', name: 'create-message', component: MessageCreate },
     {
-        path: '/message/:id/', name: 'message', component: Message, query: {
+        path: '/:message(message|draft)/:id/', name: 'message', component: Message, query: {
             highlight_attachment: Number,
             required: false,
         }
     },
-    { path: '/message/:id/scan/', name: 'message-scan', component: Scan },
+    { path: '/:message(message|draft)/:id/scan/', name: 'message-scan', component: Scan },
     { path: '/:pathMatch(.*)*', name: 'not-found', redirect: "/" },
 ];
 

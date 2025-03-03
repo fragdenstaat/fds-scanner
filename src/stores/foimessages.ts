@@ -6,11 +6,12 @@ import { toLocaleDateString } from '../utils';
 
 type FoiMessageApi = {
     id: number,
+    resource_uri: String,
     request: String,
     timestamp: string,
     is_response: boolean,
     is_draft: boolean,
-    sender: string,
+    sender: string | null,
     subject: string,
 };
 
@@ -18,12 +19,14 @@ export type FoiMessage = FoiMessageApi & {
     request_id: string;
     timestamp_date: Date;
     timestamp_label: string;
+    path: string;
 };
 
 const makeFoiMessage = (mes: FoiMessageApi): FoiMessage => {
     let request_id = mes.request.split('/')[mes.request.split('/').length - 2]
     return {
         ...mes,
+        path: `/${mes.is_draft ? "draft" : "message"}/${mes.id}/`,
         request_id,
         timestamp_date: new Date(mes.timestamp),
         timestamp_label: toLocaleDateString(new Date(mes.timestamp)),
@@ -40,12 +43,19 @@ export const useFoiMessagesStore = defineStore('foimessages', () => {
         messages.value = (await invoke<FoiMessageApi[]>('get_foimessages', { foirequest_id: foirequestId })).map(m => makeFoiMessage(m))
     };
 
-    const getMessage = async (messageId: number): Promise<FoiMessage> => {
+    const getMessage = async (messageId: number, isDraft: boolean = false): Promise<FoiMessage> => {
+        if (isDraft) {
+            return await _getMessage(messageId, "get_foimessagedraft")
+        }
+        return await _getMessage(messageId, "get_foimessage")
+    }
+
+    const _getMessage = async (messageId: number, command: "get_foimessage" | "get_foimessagedraft"): Promise<FoiMessage> => {
         if (messageMap.value.has(messageId)) {
             return messageMap.value.get(messageId)!
         }
         try {
-            const apiMessage = await invoke<FoiMessageApi>('get_foimessage', { foimessage_id: messageId });
+            const apiMessage = await invoke<FoiMessageApi>(command, { foimessage_id: messageId });
             const message = makeFoiMessage(apiMessage);
             messages.value.push(message);
             return message

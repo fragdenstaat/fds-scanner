@@ -23,12 +23,13 @@ const REVOKE_TOKEN_ENDPOINT: &str = "https://fragdenstaat.de/account/revoke_toke
 
 const USER_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/user/";
 
-const SCOPE: [&str; 5] = [
+const SCOPE: [&str; 6] = [
     "read:user",
     "read:profile",
     "read:email",
     "read:request",
-    "upload:message",
+    "write:message",
+    "write:attachment",
 ];
 
 struct OAuthData {
@@ -354,7 +355,7 @@ pub async fn logout(
         state.user = None;
         state.upload_url = None;
         state.file_path = None;
-        state.message_id = None;
+        state.message_resource_uri = None;
         state.save(&app_handle)?;
     }
     Ok(true)

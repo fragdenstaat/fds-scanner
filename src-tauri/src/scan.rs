@@ -1,11 +1,10 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
+use tauri::path::BaseDirectory;
 use tauri::{Emitter, Manager, State};
 use tauri_plugin_documentcamera::{DocumentCameraExt, ScanRequest};
 
-use crate::api::{
-    create_attachment, create_upload, get_tus_client, resume_upload, FoiAttachment, MessageId,
-};
+use crate::api::{create_attachment, create_upload, get_tus_client, resume_upload, FoiAttachment};
 use crate::error::AppError;
 use crate::AppState;
 
@@ -16,7 +15,7 @@ fn reset_upload_state(
     let mut state = state.lock().unwrap();
     state.upload_url = None;
     state.file_path = None;
-    state.message_id = None;
+    state.message_resource_uri = None;
     state.save(app_handle)?;
     Ok(())
 }
@@ -25,7 +24,7 @@ fn reset_upload_state(
 pub async fn scan_document(
     app_handle: tauri::AppHandle,
     state: State<'_, Mutex<AppState>>,
-    message_id: MessageId,
+    message_resource_uri: String,
 ) -> Result<bool, AppError> {
     log::info!("scan document in main called");
 
@@ -39,6 +38,11 @@ pub async fn scan_document(
     };
     let file_path = PathBuf::from(file_path);
 
+    // // Use this to try without scanning.
+    // let file_path = app_handle
+    //     .path()
+    //     .resolve("resources/example.pdf", BaseDirectory::Resource)?;
+
     log::info!("scan document completed, file should be at {:?}", file_path);
 
     if !file_path.exists() {
@@ -49,7 +53,7 @@ pub async fn scan_document(
     }
     {
         let mut state = state.lock().unwrap();
-        state.message_id = Some(message_id);
+        state.message_resource_uri = Some(message_resource_uri);
         state.file_path = Some(file_path.to_str().unwrap().to_string());
         state.save(&app_handle)?;
     }
@@ -62,19 +66,19 @@ pub async fn upload_document(
     state: State<'_, Mutex<AppState>>,
 ) -> Result<Option<FoiAttachment>, AppError> {
     log::info!("upload document document in main called");
-    let (message_id, file_path, upload_url) = {
+    let (message_resource_uri, file_path, upload_url) = {
         let state = state.lock().unwrap();
         (
-            state.message_id,
+            state.message_resource_uri.clone(),
             state.file_path.clone(),
             state.upload_url.clone(),
         )
     };
 
-    let (message_id, file_path) = match (message_id, file_path) {
-        (Some(message_id), Some(file_path)) => (message_id, file_path),
+    let (message_resource_uri, file_path) = match (message_resource_uri, file_path) {
+        (Some(message_resource_uri), Some(file_path)) => (message_resource_uri, file_path),
         _ => {
-            log::warn!("upload_document: missing message_id or file_path");
+            log::warn!("upload_document: missing message_resource_uri or file_path");
             return Ok(None);
         }
     };
@@ -111,7 +115,7 @@ pub async fn upload_document(
     app.emit("scan-progress", "upload_complete")?;
     std::fs::remove_file(&file_path)?;
 
-    let att = create_attachment(&state, message_id, &upload_url).await?;
+    let att = create_attachment(&state, message_resource_uri, &upload_url).await?;
     app.emit("scan-progress", "attachment_created")?;
     reset_upload_state(&app, &state)?;
 

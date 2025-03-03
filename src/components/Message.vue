@@ -11,9 +11,12 @@
         <ion-content class="ion-padding">
             <error-message v-if="error" :message="error" />
             <template v-else>
+                <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
+                    <ion-refresher-content></ion-refresher-content>
+                </ion-refresher>
+
                 <h2 v-if="message.subject">{{ message.subject }}</h2>
                 <h2 v-else><em>(kein Betreff)</em></h2>
-
                 <p>
                     <template v-if="message.sender">von {{ message.sender }}</template>
                     am {{ message.timestamp_label }}
@@ -22,12 +25,24 @@
 
                 <div class="ion-padding ion-text-center">
                     <ion-button :router-link="scanPath" router-direction="forward">
-                        Scanne Dokument
+                        <template v-if="highlightAttachment">
+                            Scanne weiteres Dokument
+                        </template>
+                        <template v-else>
+                            Scanne Dokument
+                        </template>
                     </ion-button>
                 </div>
-                <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
-                    <ion-refresher-content></ion-refresher-content>
-                </ion-refresher>
+
+                <ion-card v-if="scanDoneAfterDeeplink" color="secondary">
+                    <ion-card-header>
+                        <ion-card-title>Dokument wurde hochgeladen</ion-card-title>
+                    </ion-card-header>
+                    <ion-card-content v-if="message.is_draft">
+                        Scannen Sie ein weiteres Dokument oder führen Sie das Anlegen der Postnachricht auf der Webseite
+                        weiter.
+                    </ion-card-content>
+                </ion-card>
 
                 <ion-list>
                     <ion-item v-for="attachment in store.attachments"
@@ -53,8 +68,14 @@
 
 <script setup lang="ts">
 import {
-    IonBackButton, IonButton,
-    IonButtons, IonContent, IonHeader,
+    IonBackButton,
+    IonBadge,
+    IonButton,
+    IonButtons,
+    IonCard,
+    IonCardContent,
+    IonCardHeader, IonCardTitle,
+    IonContent, IonHeader,
     IonItem, IonLabel,
     IonList,
     IonPage,
@@ -62,8 +83,9 @@ import {
     IonSpinner,
     IonTitle, IonToolbar,
 } from '@ionic/vue';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
+import { account } from '../account.ts';
 import { useFoiAttachmentsStore } from '../stores/foiattachments.ts';
 import { FoiMessage, useFoiMessagesStore } from '../stores/foimessages.ts';
 import { useStoreLoader } from '../utils.ts';
@@ -74,8 +96,9 @@ const foimessageStore = useFoiMessagesStore()
 const store = useFoiAttachmentsStore()
 const route = useRoute<"message">();
 
+const isDraft = route.params.message === "draft";
 const messageId = parseInt(route.params.id);
-const scanPath = `/message/${messageId}/scan`;
+const scanPath = `/${route.params.message}/${messageId}/scan/`;
 const error = ref<string | null>(null)
 let backHref = ref<string>("/")
 
@@ -84,6 +107,9 @@ let highlightAttachment: number | null = null
 if (highlightAttachmentParam) {
     highlightAttachment = parseInt(highlightAttachmentParam as string)
 }
+const scanDoneAfterDeeplink = computed(() => {
+    return account.mountedWithDeepUrl() && highlightAttachment !== null
+})
 
 const { loading, errorMessage, loadStoreObjects } = useStoreLoader(() => {
     return store.getAttachments(messageId);
@@ -91,7 +117,7 @@ const { loading, errorMessage, loadStoreObjects } = useStoreLoader(() => {
 
 let message: FoiMessage
 try {
-    message = await foimessageStore.getMessage(messageId);
+    message = await foimessageStore.getMessage(messageId, isDraft);
     backHref.value = `/request/${message.request_id}/`;
 } catch (e) {
     error.value = (e as Error).toString()
@@ -100,6 +126,9 @@ try {
 onMounted(async () => {
     await store.getAttachments(messageId);
     loading.value = false;
+});
+onUnmounted(() => {
+    store.clearAttachments();
 });
 
 async function handleRefresh(event: CustomEvent) {

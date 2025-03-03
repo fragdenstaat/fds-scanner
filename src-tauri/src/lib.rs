@@ -7,7 +7,8 @@ mod tus;
 
 use account::{get_user, logout, start_oauth};
 use api::{
-    get_foiattachments, get_foimessage, get_foimessages, get_foirequest, get_foirequests, MessageId,
+    get_foiattachments, get_foimessage, get_foimessagedraft, get_foimessages, get_foirequest,
+    get_foirequests,
 };
 use scan::{scan_document, upload_document};
 use std::sync::Mutex;
@@ -38,7 +39,7 @@ struct User {
 struct AppState {
     auth: Option<AuthState>,
     user: Option<User>,
-    message_id: Option<MessageId>,
+    message_resource_uri: Option<String>,
     file_path: Option<String>,
     upload_url: Option<String>,
 }
@@ -60,7 +61,9 @@ impl AppState {
         Ok(AppState {
             auth: auth_state,
             user: None,
-            message_id: store.get("message_id").map(|v| v.as_u64().unwrap()),
+            message_resource_uri: store
+                .get("message_resource_uri")
+                .map(|v| v.as_str().unwrap().to_string()),
             file_path: store
                 .get("file_path")
                 .map(|v| v.as_str().unwrap().to_string()),
@@ -91,10 +94,10 @@ impl AppState {
                 store.delete("expires_at");
             }
         }
-        if let Some(message_id) = self.message_id {
-            store.set("message_id", message_id);
+        if let Some(ref message_resource_uri) = self.message_resource_uri {
+            store.set("message_resource_uri", message_resource_uri.clone());
         } else {
-            store.delete("message_id");
+            store.delete("message_resource_uri");
         }
 
         if let Some(ref file_path) = self.file_path {
@@ -160,6 +163,7 @@ pub fn run() {
             get_foirequest,
             get_foimessages,
             get_foimessage,
+            get_foimessagedraft,
             get_foiattachments,
             scan_document,
             upload_document,

@@ -1,3 +1,4 @@
+use futures::future::join;
 use reqwest::header;
 use serde::de::DeserializeOwned;
 
@@ -15,12 +16,16 @@ use chrono::prelude::*;
 
 const REQUEST_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/request/";
 const MESSAGE_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/message/";
+const DRAFT_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/message/draft/";
 const UPLOAD_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/upload/";
 const ATTACHMENT_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/attachment/";
 const UPLOAD_URL_BASE: &str = "https://fragdenstaat.de";
 
 type FoiRequestId = u64;
+pub type MessageId = u64;
 type FoiMessageId = u64;
+type FoiMessageDraftId = u64;
+pub type AttachmentId = u64;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PublicBody {
@@ -38,11 +43,10 @@ pub struct FoiRequest {
     public_body: PublicBody,
 }
 
-pub type MessageId = u64;
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FoiMessage {
     id: MessageId,
+    resource_uri: String,
     request: String,
     timestamp: String,
     is_response: bool,
@@ -51,14 +55,14 @@ pub struct FoiMessage {
     subject: String,
 }
 
-pub type AttachmentId = u64;
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FoiAttachment {
     pub id: AttachmentId,
     name: String,
     filetype: String,
     size: u64,
+    site_url: String,
+    file_url: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -144,12 +148,12 @@ pub async fn get_foirequest(
 
 pub async fn get_all_objects<T>(
     url: String,
-    state: State<'_, Mutex<AppState>>,
+    state: &State<'_, Mutex<AppState>>,
 ) -> Result<Vec<T>, AppError>
 where
     T: Clone + Serialize + DeserializeOwned,
 {
-    let client = get_api_client(&state)?;
+    let client = get_api_client(state)?;
 
     let mut objects: Vec<T> = vec![];
     let mut next = Some(url);
@@ -173,11 +177,18 @@ pub async fn get_foimessages(
     state: State<'_, Mutex<AppState>>,
     foirequest_id: FoiRequestId,
 ) -> Result<Vec<FoiMessage>, AppError> {
-    let url = format!("{}?request={}&kind=post", MESSAGE_ENDPOINT, foirequest_id);
-    let mut objects: Vec<FoiMessage> = get_all_objects(url, state).await?;
-    objects.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
-    objects.reverse();
-    Ok(objects)
+    let message_url = format!("{}?request={}&kind=post", MESSAGE_ENDPOINT, foirequest_id);
+    let draft_url = format!("{}?request={}&kind=post", DRAFT_ENDPOINT, foirequest_id);
+    let results = join(
+        get_all_objects::<FoiMessage>(message_url, &state),
+        get_all_objects::<FoiMessage>(draft_url, &state),
+    )
+    .await;
+    let (mut messages, drafts) = (results.0?, results.1?);
+    messages.extend_from_slice(&drafts);
+    messages.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+    messages.reverse();
+    Ok(messages)
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -195,12 +206,26 @@ pub async fn get_foimessage(
 }
 
 #[tauri::command(rename_all = "snake_case")]
+pub async fn get_foimessagedraft(
+    state: State<'_, Mutex<AppState>>,
+    foimessage_id: FoiMessageDraftId,
+) -> Result<FoiMessage, AppError> {
+    let client = get_api_client(&state)?;
+
+    let url = format!("{}{}/", DRAFT_ENDPOINT, foimessage_id);
+    let response = client.get(url).send().await?;
+    let api_response = response.json::<FoiMessage>().await?;
+
+    Ok(api_response)
+}
+
+#[tauri::command(rename_all = "snake_case")]
 pub async fn get_foiattachments(
     state: State<'_, Mutex<AppState>>,
     foimessage_id: FoiMessageId,
 ) -> Result<Vec<FoiAttachment>, AppError> {
     let url = format!("{}?belongs_to={}", ATTACHMENT_ENDPOINT, foimessage_id);
-    let objects = get_all_objects(url, state).await?;
+    let objects = get_all_objects(url, &state).await?;
     Ok(objects)
 }
 
@@ -252,19 +277,24 @@ pub async fn resume_upload(
 
 #[derive(Serialize)]
 struct CreateAttachment {
-    message: MessageId,
+    message: String,
     upload: String,
 }
 
 pub async fn create_attachment(
     state: &State<'_, Mutex<AppState>>,
-    message_id: MessageId,
+    message_resource_uri: String,
     upload_url: &str,
 ) -> Result<FoiAttachment, AppError> {
     let client = get_api_client(state)?;
 
+    log::info!(
+        "Message resource URI on attachment: {}",
+        message_resource_uri
+    );
+
     let att_data = CreateAttachment {
-        message: message_id,
+        message: message_resource_uri,
         upload: upload_url.to_string(),
     };
 
@@ -273,7 +303,9 @@ pub async fn create_attachment(
         .json(&att_data)
         .send()
         .await?;
-    response.status().is_success();
-    let attachment = response.json::<FoiAttachment>().await?;
+    let response_text = response.text().await?;
+    log::info!("Response: {}", response_text);
+    // let attachment = response.json::<FoiAttachment>().await?;
+    let attachment = serde_json::from_str::<FoiAttachment>(&response_text).unwrap();
     Ok(attachment)
 }
