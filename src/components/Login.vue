@@ -18,7 +18,7 @@
                             <hr class="ion-margin-vertical" />
                             <p>Zeigt FragDenStaat.de Ihnen einen QR Code an?</p>
 
-                            <ion-button :router-link="'/login/qrcode/'">
+                            <ion-button @click="startQrCode">
                                 <ion-icon aria-hidden="true" :icon="qrCodeOutline" class="ion-margin-end"></ion-icon>
                                 Login mit QR Code
                             </ion-button>
@@ -84,6 +84,10 @@ async function startLogin() {
         });
         await alert.present();
     }
+}
+
+function startQrCode() {
+    ionRouter.navigate('/login/qrcode/', 'none', 'push', undefined);
 }
 
 </script>
