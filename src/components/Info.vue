@@ -40,58 +40,10 @@
 
 <script setup lang="ts">
 
-import { alertController, IonBackButton, IonButtons, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, useIonRouter } from '@ionic/vue';
-import { onMounted, ref } from 'vue';
-
-import { account } from '../account.ts';
+import { IonBackButton, IonButtons, IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/vue';
 
 import { useToastMessages } from '../utils.ts';
 
 useToastMessages();
 
-const ionRouter = useIonRouter();
-let loginStarted = ref(false);
-
-onMounted(() => {
-    if (account.startLoginOnMount()) {
-        startLogin();
-    }
-});
-
-async function startLogin() {
-    loginStarted.value = true;
-    console.log("Starting login process");
-
-    let result = await account.startLogin();
-    if (result === null) {
-        console.log("Login result", result);
-        loginStarted.value = true;
-        let nextPath = account.getNextPath();
-        ionRouter.navigate(nextPath, 'none', 'pop');
-    } else {
-        console.error("Login failed", result);
-        loginStarted.value = false;
-        const alert = await alertController.create({
-            header: 'Login fehlgeschlagen',
-            subHeader: 'Folgende Details wurden übermittelt',
-            message: result,
-            buttons: ['Schade'],
-        });
-        await alert.present();
-    }
-}
-
 </script>
-
-<style>
-ion-grid {
-    height: 100%;
-}
-
-ion-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-}
-</style>
