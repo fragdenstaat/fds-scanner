@@ -11,6 +11,11 @@ interface User {
 
 type MaybeUser = User | null
 
+
+const BASE_ORIGIN = "https://fragdenstaat.de"
+const BASE_PATH = "/app/scanner/deep"
+
+
 class Account {
     #loggedIn: boolean = false;
     #user: User | null = null;
@@ -77,7 +82,20 @@ class Account {
     }
 
     async startLogin(startUrl: string | null = null): Promise<string | null> {
-        if (startUrl === null && this.#deepUrl !== null) {
+        if (startUrl !== null) {
+            let tempUrl = new URL(startUrl)
+            if (tempUrl.origin === BASE_ORIGIN && tempUrl.pathname.startsWith(BASE_PATH)) {
+                let tempStartUrl = tempUrl.searchParams.get("start_url")
+                if (tempStartUrl !== null) {
+                    startUrl = tempStartUrl
+                    // Set start_url param as login start and remove from deep url
+                    tempUrl.searchParams.delete("start_url")
+                    this.#deepUrl = tempUrl.toString()
+                }
+            } else {
+                startUrl = null
+            }
+        } else if (this.#deepUrl !== null) {
             let deepUrl = new URL(this.#deepUrl)
             let deepStartUrl = deepUrl.searchParams.get("start_url")
             if (deepStartUrl !== null) {
@@ -119,6 +137,8 @@ class Account {
     logout() {
         this.#loggedIn = false;
         this.#user = null;
+        this.#deepUrl = null;
+        this.#mountedWithDeepUrl = false;
         this.addMessage(`Sie sind jetzt ausgeloggt!`)
     }
 
@@ -134,8 +154,6 @@ class Account {
 }
 
 export const account = new Account()
-
-const BASE_PATH = "/app/scanner/deep"
 
 export const getDeepPath = (deepUrl: string) => {
     let url = new URL(deepUrl);

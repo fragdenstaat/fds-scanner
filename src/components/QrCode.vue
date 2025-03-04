@@ -1,14 +1,14 @@
 <template>
     <ion-page>
-        <ion-header>
+        <ion-header translucent>
             <ion-toolbar>
-                <!-- <ion-title>QR-Code-Login</ion-title> -->
+                <ion-title>QR Code</ion-title>
                 <ion-buttons slot="start">
                     <ion-back-button default-href="/login/" text="Abbrechen"></ion-back-button>
                 </ion-buttons>
             </ion-toolbar>
         </ion-header>
-        <ion-content id="qrcode-content" class="ion-padding">
+        <ion-content id="qrcode-content" class="ion-padding" fullscreen>
             <template v-if="denied">
                 <h3>Die Kamera-Berechtigung wurde verweigert</h3>
                 <ion-button @click="openAppSettings">Einstellungen anpassen</ion-button>
@@ -17,7 +17,7 @@
                 <template v-if="processing">
                 </template>
                 <template v-else-if="scanning">
-                    <div class="ion-padding background">
+                    <div class="ion-padding background ion-text-center">
                         <h3>Scannen Sie den QR Code</h3>
                     </div>
                 </template>
@@ -38,7 +38,8 @@ import { alertController, IonBackButton, IonButton, IonButtons, IonContent, IonH
 import { onUnmounted, ref } from 'vue';
 import { account } from '../account.ts';
 
-let scanning = ref(false);
+let scanning = ref(true);
+let bodyBackground = ref("transparent");
 let processing = ref(false);
 let denied = ref(false);
 const ionRouter = useIonRouter();
@@ -72,6 +73,7 @@ async function startScan() {
         scanning.value = false;
         return
     }
+    bodyBackground.value = "inherit";
     scanning.value = false;
     const loading = await loadingController.create({
         message: 'Login wird vorbereitet...',
@@ -86,7 +88,8 @@ async function startScan() {
     let result = await account.startLogin(scanResult.content);
     if (result === null) {
         console.log("Login result", result);
-        ionRouter.navigate('/', 'none', 'pop');
+        let nextPath = account.getNextPath();
+        ionRouter.navigate(nextPath, 'none', 'pop');
         await loading.dismiss();
     } else {
         console.error("Login failed", result);
@@ -105,6 +108,8 @@ async function startScan() {
 
 onIonViewDidEnter(setupScan);
 onUnmounted(async () => {
+    // Reset body background
+    bodyBackground.value = "inherit";
     if (scanning.value) {
         await cancel();
     }
@@ -119,8 +124,14 @@ onUnmounted(async () => {
 }
 
 .background {
-    background: white;
+    background: var(--ion-background-color-step-50, #fff);
     width: 100%;
     border-radius: 10px;
+}
+</style>
+
+<style>
+body {
+    background-color: v-bind(bodyBackground) !important;
 }
 </style>
