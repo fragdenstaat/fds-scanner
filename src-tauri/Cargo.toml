@@ -1,8 +1,8 @@
 [package]
 name = "fds-scanner"
-version = "0.1.4"
-description = "A Tauri App"
-authors = ["you"]
+version = "0.1.5"
+description = "FDS Scanner app"
+authors = ["Stefan Wehrmeyer"]
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
