@@ -16,7 +16,7 @@ type FoiMessageApi = {
 };
 
 export type FoiMessage = FoiMessageApi & {
-    request_id: string;
+    request_id: number;
     timestamp_date: Date;
     timestamp_label: string;
     path: string;
@@ -27,7 +27,7 @@ const makeFoiMessage = (mes: FoiMessageApi): FoiMessage => {
     return {
         ...mes,
         path: `/${mes.is_draft ? "draft" : "message"}/${mes.id}/`,
-        request_id,
+        request_id: parseInt(request_id),
         timestamp_date: new Date(mes.timestamp),
         timestamp_label: toLocaleDateString(new Date(mes.timestamp)),
     }

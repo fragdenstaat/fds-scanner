@@ -14,12 +14,18 @@
                 <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
                     <ion-refresher-content></ion-refresher-content>
                 </ion-refresher>
+                <h5 v-if="request">Nachricht in Anfrage „{{ request.title }}“ <small>[#{{ request.id }}]</small></h5>
+                <h5 v-else>
+                    Nachricht in Anfrage „
+                    <ion-skeleton-text :animated="true" style="width: 40%;"></ion-skeleton-text>
+                    <small>[#<ion-skeleton-text :animated="true" style="width: 20px;"></ion-skeleton-text>]</small>
+                </h5>
 
                 <h2 v-if="message.subject">{{ message.subject }}</h2>
                 <h2 v-else><em>(kein Betreff)</em></h2>
                 <p>
                     <template v-if="message.sender">von {{ message.sender }}</template>
-                    am {{ message.timestamp_label }}
+                    vom {{ message.timestamp_label }}
                 </p>
                 <ion-badge v-if="message.is_draft">Entwurf</ion-badge>
 
@@ -80,6 +86,7 @@ import {
     IonList,
     IonPage,
     IonRefresher, IonRefresherContent,
+    IonSkeletonText,
     IonSpinner,
     IonTitle, IonToolbar,
 } from '@ionic/vue';
@@ -88,11 +95,13 @@ import { useRoute } from 'vue-router';
 import { account } from '../account.ts';
 import { useFoiAttachmentsStore } from '../stores/foiattachments.ts';
 import { FoiMessage, useFoiMessagesStore } from '../stores/foimessages.ts';
+import { FoiRequest, useFoiRequestsStore } from '../stores/foirequests.ts';
 import { useStoreLoader } from '../utils.ts';
 import ErrorMessage from "./ErrorMessage.vue";
 
 
 const foimessageStore = useFoiMessagesStore()
+const foirequestStore = useFoiRequestsStore()
 const store = useFoiAttachmentsStore()
 const route = useRoute<"message">();
 
@@ -116,6 +125,7 @@ const { loading, errorMessage, loadStoreObjects } = useStoreLoader(() => {
 });
 
 let message: FoiMessage
+let request = ref<FoiRequest | null>(null)
 try {
     message = await foimessageStore.getMessage(messageId, isDraft);
     backHref.value = `/request/${message.request_id}/`;
@@ -124,7 +134,11 @@ try {
 }
 
 onMounted(async () => {
-    await store.getAttachments(messageId);
+    let result = await Promise.all([
+        foirequestStore.getRequest(message.request_id),
+        store.getAttachments(messageId)
+    ])
+    request.value = result[0]
     loading.value = false;
 });
 onUnmounted(() => {
