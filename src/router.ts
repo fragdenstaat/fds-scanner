@@ -15,6 +15,16 @@ export interface RouteNamedMap {
         // these are the normalized params
         Record<never, never>
     >
+    info: RouteRecordInfo<
+        // here we have the same name
+        'info',
+        // this is the path, it will appear in autocompletion
+        '/info/',
+        // these are the raw params. In this case, there are no params allowed
+        Record<never, never>,
+        // these are the normalized params
+        Record<never, never>
+    >
     login: RouteRecordInfo<
         'login',
         '/login/',
@@ -75,6 +85,7 @@ declare module 'vue-router' {
 }
 
 import Account from './components/Account.vue';
+import Info from './components/Info.vue';
 import Login from './components/Login.vue';
 import Message from './components/Message.vue';
 import MessageCreate from './components/MessageCreate.vue';
@@ -85,6 +96,7 @@ import Scan from './components/Scan.vue';
 
 const routes = [
     { path: '/', name: 'home', component: RequestList },
+    { path: '/info/', name: 'info', component: Info },
     { path: '/login/', name: 'login', component: Login },
     { path: '/login/qrcode/', name: 'login-qrcode', component: QrCode },
     { path: '/account/', name: 'account', component: Account },

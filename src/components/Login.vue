@@ -12,14 +12,27 @@
                         <template v-if="loginStarted">
                             <ion-loading message="Login gestartet..."></ion-loading>
                         </template>
-                        <div v-if="!loginStarted" class="ion-text-center">
+                        <div v-else class="ion-text-center">
                             <ion-button @click="startLogin">Einloggen mit FragDenStaat.de</ion-button>
+
                             <hr class="ion-margin-vertical" />
                             <p>Zeigt FragDenStaat.de Ihnen einen QR Code an?</p>
 
-                            <ion-button :router-link="'/login/qrcode'">
+                            <ion-button :router-link="'/login/qrcode/'">
                                 <ion-icon aria-hidden="true" :icon="qrCodeOutline" class="ion-margin-end"></ion-icon>
                                 Login mit QR Code
+                            </ion-button>
+                        </div>
+                    </ion-col>
+                    <ion-col v-if="!loginStarted" size-xs="12">
+                        <p class="ion-text-center">
+                            FDS Scanner ist eine App von
+                            <a href="https://fragdenstaat.de" target="_blank"
+                                rel="noopener noreferrer">FragDenStaat.de</a>
+                        </p>
+                        <div class="ion-text-center">
+                            <ion-button fill="outline" :router-link="'/info/'">
+                                Über diese App
                             </ion-button>
                         </div>
                     </ion-col>

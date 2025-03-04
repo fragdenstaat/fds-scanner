@@ -144,8 +144,8 @@ export const getDeepPath = (deepUrl: string) => {
 }
 
 router.beforeEach((to, _from, next) => {
-    if (!to.path.startsWith('/login') && !account.isLoggedIn) next({ name: 'login' })
-    else if (to.path.startsWith('/login') && account.isLoggedIn) next({ name: 'home' })
+    if (!to.path.startsWith('/login/') && !to.path.startsWith('/info/') && !account.isLoggedIn) next({ name: 'login' })
+    else if (to.path.startsWith('/login/') && account.isLoggedIn) next({ name: 'home' })
     else next()
 })
 

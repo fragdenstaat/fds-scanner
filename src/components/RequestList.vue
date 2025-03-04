@@ -3,13 +3,13 @@
         <ion-header>
             <ion-toolbar>
                 <ion-buttons slot="start">
-                    <ion-button :router-link="'/account'">
+                    <ion-button :router-link="'/info/'">
                         Info
                     </ion-button>
                 </ion-buttons>
                 <ion-title>Anfragen</ion-title>
                 <ion-buttons slot="end">
-                    <ion-button :router-link="'/account'">
+                    <ion-button :router-link="'/account/'">
                         Konto
                     </ion-button>
                 </ion-buttons>
