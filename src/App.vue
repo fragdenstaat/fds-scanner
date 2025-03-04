@@ -45,3 +45,15 @@ onOpenUrl((urls) => {
 });
 
 </script>
+
+<style>
+body {
+  background-color: #f7f7f7;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #0d0d0d;
+  }
+}
+</style>
