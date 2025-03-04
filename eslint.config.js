@@ -18,8 +18,9 @@ export default [
     ],
     "rules": {
       // override/add rules settings here, such as:
-      // 'vue/no-unused-vars': 'error'
-        "prettier/prettier": "error",
+      "prettier/prettier": "error",
+      "vue/no-unused-vars": "error",
+      "vue/no-undef-components": "error"
     }
   }
 ]
