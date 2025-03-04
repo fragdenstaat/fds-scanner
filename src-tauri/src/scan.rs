@@ -4,9 +4,9 @@ use tauri::path::BaseDirectory;
 use tauri::{Emitter, Manager, State};
 use tauri_plugin_documentcamera::{DocumentCameraExt, ScanRequest};
 
-use crate::api::{create_attachment, create_upload, get_tus_client, resume_upload, FoiAttachment};
-use crate::error::AppError;
 use crate::AppState;
+use crate::api::{FoiAttachment, create_attachment, create_upload, get_tus_client, resume_upload};
+use crate::error::AppError;
 
 fn reset_upload_state(
     app_handle: &tauri::AppHandle,
