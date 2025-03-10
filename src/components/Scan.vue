@@ -88,7 +88,7 @@ onMounted(async () => {
         }
     });
 
-    await startScan(message);
+    await startScan();
 });
 
 async function showError(message: string) {
@@ -98,7 +98,7 @@ async function showError(message: string) {
 }
 
 
-async function startScan(message: FoiMessage) {
+async function startScan() {
     // Is there anything left to upload?
     loading.message = "Vorbereitung..."
     await loading.present();
