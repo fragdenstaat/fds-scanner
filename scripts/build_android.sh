@@ -13,5 +13,5 @@ pnpm tauri android build
 # Set up a service account for the Play Store API
 # https://github.com/chippmann/androidpublisher/blob/master/CONFIGURATION_OF_GOOGLE_SERVICE_ACCOUNT.md
 # Put JSON key in environment variable GOOGLE_SERVICE_ACCOUNT
-
-uv run ./playstore_upload.py
+script_dir=$(dirname "$0")
+uv run $script_dir/playstore_upload.py
