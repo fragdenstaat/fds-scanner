@@ -16,9 +16,8 @@
                 </ion-refresher>
                 <h5 v-if="request">Nachricht in Anfrage „{{ request.title }}“ <small>[#{{ request.id }}]</small></h5>
                 <h5 v-else>
-                    Nachricht in Anfrage „
+                    <ion-skeleton-text :animated="true" style="width: 100%;"></ion-skeleton-text>
                     <ion-skeleton-text :animated="true" style="width: 40%;"></ion-skeleton-text>
-                    <small>[#<ion-skeleton-text :animated="true" style="width: 20px;"></ion-skeleton-text>]</small>
                 </h5>
 
                 <h2 v-if="message.subject">{{ message.subject }}</h2>
