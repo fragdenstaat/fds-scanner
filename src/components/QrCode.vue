@@ -34,12 +34,11 @@
 <script setup lang="ts">
 import { cancel, checkPermissions, Format, openAppSettings, requestPermissions, scan } from '@tauri-apps/plugin-barcode-scanner';
 
-import { alertController, IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonPage, IonToolbar, loadingController, onIonViewDidEnter, useIonRouter } from '@ionic/vue';
+import { alertController, IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, loadingController, onIonViewDidEnter, useIonRouter } from '@ionic/vue';
 import { onUnmounted, ref } from 'vue';
 import { account } from '../account.ts';
 
 let scanning = ref(true);
-let bodyBackground = ref("transparent");
 let processing = ref(false);
 let denied = ref(false);
 const ionRouter = useIonRouter();
@@ -64,6 +63,7 @@ async function setupScan() {
 };
 
 async function startScan() {
+    document.body.style.backgroundColor = "transparent";
     scanning.value = true;
     let scanResult
     try {
@@ -73,7 +73,7 @@ async function startScan() {
         scanning.value = false;
         return
     }
-    bodyBackground.value = "inherit";
+    document.body.style.backgroundColor = ""
     scanning.value = false;
     const loading = await loadingController.create({
         message: 'Login wird vorbereitet...',
@@ -109,7 +109,7 @@ async function startScan() {
 onIonViewDidEnter(setupScan);
 onUnmounted(async () => {
     // Reset body background
-    bodyBackground.value = "inherit";
+    document.body.style.backgroundColor = "";
     if (scanning.value) {
         await cancel();
     }
@@ -127,11 +127,5 @@ onUnmounted(async () => {
     background: var(--ion-background-color-step-50, #fff);
     width: 100%;
     border-radius: 10px;
-}
-</style>
-
-<style>
-body {
-    background-color: v-bind(bodyBackground) !important;
 }
 </style>
