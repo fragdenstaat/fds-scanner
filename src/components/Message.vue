@@ -145,8 +145,11 @@ onUnmounted(() => {
 });
 
 async function handleRefresh(event: CustomEvent) {
-    await loadStoreObjects()
-    event.target?.complete();
+    try {
+        await loadStoreObjects()
+    } finally {
+        event.target?.complete();
+    }
 }
 
 

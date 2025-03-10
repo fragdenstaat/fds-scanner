@@ -99,8 +99,11 @@ const { loading, errorMessage, loadStoreObjects } = useStoreLoader(() => {
 });
 
 async function handleRefresh(event: CustomEvent) {
-    await loadStoreObjects();
-    event.target?.complete();
+    try {
+        await loadStoreObjects()
+    } finally {
+        event.target?.complete();
+    }
 }
 onUnmounted(() => {
     store.clearMessages();

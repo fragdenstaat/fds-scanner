@@ -94,10 +94,12 @@ const { errorMessage, loadStoreObjects } = useStoreLoader(async () => {
 });
 
 
-function handleRefresh(event: CustomEvent) {
-    loadStoreObjects().finally(() => {
-        event.detail.complete();
-    });
+async function handleRefresh(event: CustomEvent) {
+    try {
+        await loadStoreObjects()
+    } finally {
+        event.target?.complete();
+    }
 }
 </script>
 

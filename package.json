@@ -10,7 +10,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@ionic/vue": "^8.4.3",
+    "@ionic/vue": "==8.4.2",
     "@ionic/vue-router": "^8.4.3",
     "@sentry/vue": "^9.3.0",
     "@tauri-apps/api": "^2.3.0",
