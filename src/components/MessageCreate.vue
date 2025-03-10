@@ -73,7 +73,7 @@ try {
     ionRouter.replace("/");
 }
 
-const minDate = computed(() => request.created_at_date)
+const minDate = computed(() => request.created_at_date.toISOString())
 
 const letterSent = ref(0)
 const receivedDate = ref(today)
