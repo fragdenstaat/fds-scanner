@@ -21,18 +21,16 @@ Set new version in `tauri.conf.json`, `src-tauri/Cargo.toml` and `package.json`.
 ### iOS
 
 ```bash
-pnpm tauri ios init
-script/build_ios.sh
+# possibly: pnpm tauri ios init
+bash script/build_ios.sh
 ```
 
 ### Android
 
 ```bash
-pnpm tauri android init
-pnpm tauri icon public/fds-scanner.png --ios-color "#fff"
-# Follow instructions to configure signing
-# https://tauri.app/distribute/sign/android/#configure-the-signing-key
-pnpm tauri android build
+# possiby: pnpm tauri android init
+# pnpm tauri icon public/fds-scanner.png --ios-color "#fff"
+bash script/build_ios.sh
 ```
 
 ## Documentation
