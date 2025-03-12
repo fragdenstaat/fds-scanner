@@ -5,6 +5,7 @@ use tauri::{Emitter, Manager, State};
 use tauri_plugin_documentcamera::{DocumentCameraExt, ScanRequest};
 
 use crate::AppState;
+use crate::account::ensure_valid_token;
 use crate::api::{FoiAttachment, create_attachment, create_upload, get_tus_client, resume_upload};
 use crate::error::AppError;
 
@@ -89,6 +90,8 @@ pub async fn upload_document(
         log::warn!("upload_document: file does not exist at {:?}", file_path);
         return Ok(None);
     }
+
+    ensure_valid_token(&app, &state).await?;
 
     let tus_client = get_tus_client(&state)?;
 
