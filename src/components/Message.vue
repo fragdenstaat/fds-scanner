@@ -50,14 +50,16 @@
                 </ion-card>
 
                 <ion-list>
-                    <ion-item v-for="attachment in store.attachments"
-                        :color="attachment.id === highlightAttachment ? 'success' : undefined">
+                    <ion-item v-for="attachment in store.attachments" :detail="false" :key="attachment.id" href="#"
+                        :color="attachment.id === highlightAttachment ? 'success' : undefined"
+                        @click="openAttachment(attachment.site_url)">
                         <ion-label>
                             <h2>{{ attachment.name }}</h2>
                             <p>
                                 {{ attachment.filetype_label }} / {{ attachment.size_label }}
                             </p>
                         </ion-label>
+                        <ion-icon slot="end" :icon="openOutline" aria-label="Öffnen"></ion-icon>
                     </ion-item>
                 </ion-list>
                 <div v-if="loading" class="ion-text-center">
@@ -81,6 +83,7 @@ import {
     IonCardContent,
     IonCardHeader, IonCardTitle,
     IonContent, IonHeader,
+    IonIcon,
     IonItem, IonLabel,
     IonList,
     IonPage,
@@ -89,6 +92,8 @@ import {
     IonSpinner,
     IonTitle, IonToolbar,
 } from '@ionic/vue';
+import { openUrl } from '@tauri-apps/plugin-opener';
+import { openOutline } from 'ionicons/icons';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { account } from '../account.ts';
@@ -152,5 +157,8 @@ async function handleRefresh(event: CustomEvent) {
     }
 }
 
+function openAttachment(url: string) {
+    openUrl(url);
+}
 
 </script>
