@@ -24,7 +24,7 @@
                 Neue Postnachricht anlegen
             </ion-button> -->
 
-                <template v-if="store.messages.length === 0">
+                <template v-if="!loading && store.messages.length === 0">
                     <p>Keine Postnachrichten vorhanden</p>
                 </template>
 
