@@ -25,7 +25,7 @@ type FoiRequestId = u64;
 pub type MessageId = u64;
 type FoiMessageId = u64;
 type FoiMessageDraftId = u64;
-pub type AttachmentId = u64;
+pub type FoiAttachmentId = u64;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PublicBody {
@@ -57,12 +57,13 @@ pub struct FoiMessage {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FoiAttachment {
-    pub id: AttachmentId,
+    pub id: FoiAttachmentId,
     name: String,
     filetype: String,
     size: u64,
     site_url: String,
     file_url: String,
+    belongs_to: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -227,6 +228,20 @@ pub async fn get_foiattachments(
     let url = format!("{}?belongs_to={}", ATTACHMENT_ENDPOINT, foimessage_id);
     let objects = get_all_objects(url, &state).await?;
     Ok(objects)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub async fn get_foiattachment(
+    state: State<'_, Mutex<AppState>>,
+    foiattachment_id: FoiAttachmentId,
+) -> Result<FoiAttachment, AppError> {
+    let client = get_api_client(&state)?;
+
+    let url = format!("{}{}/", ATTACHMENT_ENDPOINT, foiattachment_id);
+    let response = client.get(url).send().await?;
+    let api_response = response.json::<FoiAttachment>().await?;
+
+    Ok(api_response)
 }
 
 pub fn get_tus_client(state: &State<'_, Mutex<AppState>>) -> Result<TusClient, AppError> {

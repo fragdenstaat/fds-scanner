@@ -7,8 +7,8 @@ mod tus;
 
 use account::{get_user, logout, start_oauth};
 use api::{
-    get_foiattachments, get_foimessage, get_foimessagedraft, get_foimessages, get_foirequest,
-    get_foirequests,
+    get_foiattachment, get_foiattachments, get_foimessage, get_foimessagedraft, get_foimessages,
+    get_foirequest, get_foirequests,
 };
 use scan::{scan_document, upload_document};
 use std::sync::Mutex;
@@ -165,6 +165,7 @@ pub fn run() {
             get_foimessage,
             get_foimessagedraft,
             get_foiattachments,
+            get_foiattachment,
             scan_document,
             upload_document,
         ])

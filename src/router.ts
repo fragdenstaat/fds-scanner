@@ -69,6 +69,12 @@ export interface RouteNamedMap {
         { id: number | string, message: "message" | "draft" }, // raw value
         { id: string, message: "message" | "draft" } // normalized value
     >
+    attachment: RouteRecordInfo<
+        'attachment',
+        '/attachment/:id/',
+        { id: number | string }, // raw value
+        { id: string } // normalized value
+    >
     'not-found': RouteRecordInfo<
         'not-found',
         '/:pathMatch(.*)*',
@@ -85,6 +91,7 @@ declare module 'vue-router' {
 }
 
 import Account from './components/Account.vue';
+import Attachment from './components/Attachment.vue';
 import Info from './components/Info.vue';
 import Login from './components/Login.vue';
 import Message from './components/Message.vue';
@@ -108,6 +115,7 @@ const routes = [
             required: false,
         }
     },
+    { path: '/attachment/:id/', name: 'attachment', component: Attachment },
     { path: '/:message(message|draft)/:id/scan/', name: 'message-scan', component: Scan },
     { path: '/:pathMatch(.*)*', name: 'not-found', redirect: "/" },
 ];
