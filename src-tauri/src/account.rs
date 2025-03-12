@@ -7,6 +7,7 @@ use oauth2::{
     StandardRevocableToken, StandardTokenResponse, TokenResponse, TokenUrl,
 };
 use std::sync::Mutex;
+use std::time::{Duration, SystemTime};
 use tauri::State;
 use tauri_plugin_webauth::{WebAuthExt, WebAuthRequest};
 
@@ -22,6 +23,9 @@ const ACCESS_TOKEN_ENDPOINT: &str = "https://fragdenstaat.de/account/token/";
 const REVOKE_TOKEN_ENDPOINT: &str = "https://fragdenstaat.de/account/revoke_token/";
 
 const USER_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/user/";
+
+// Minimum duration in seconds before token expiration to refresh it
+const MIN_DUATION_BEFORE_REFRESH: u64 = 60 * 60;
 
 const SCOPE: [&str; 6] = [
     "read:user",
@@ -54,20 +58,7 @@ pub async fn get_user(
 ) -> Result<User, AppError> {
     log::info!("get user in main called");
 
-    {
-        let state = state.lock().unwrap();
-        if let Some(user) = &state.user {
-            log::debug!("Found user in state: {:?}", user);
-            return Ok(user.clone());
-        }
-    }
-
-    {
-        let state = state.lock().unwrap();
-        if state.auth.is_none() {
-            return Err(UserError("No auth state found".to_string()).into());
-        }
-    };
+    ensure_valid_token(&app_handle, &state).await?;
 
     let mut tries = 0;
     let mut response;
@@ -97,10 +88,40 @@ pub async fn get_user(
     Ok(user)
 }
 
+pub async fn ensure_valid_token(
+    app_handle: &tauri::AppHandle,
+    state: &State<'_, Mutex<AppState>>,
+) -> Result<(), AppError> {
+    let token_valid_duration = {
+        let state = state.lock().unwrap();
+        let expires_at = match state.auth {
+            Some(ref auth_state) => auth_state.expires_at,
+            None => return Err(UserError("No auth state found".to_string()).into()),
+        };
+
+        expires_at.map_or(Duration::ZERO, |expires_at| {
+            Duration::from_secs(expires_at)
+                .checked_sub(
+                    SystemTime::now()
+                        .duration_since(SystemTime::UNIX_EPOCH)
+                        .unwrap(),
+                )
+                .unwrap_or(Duration::ZERO)
+        })
+    };
+
+    // Refresh token if it expires soon
+    if token_valid_duration < Duration::from_secs(MIN_DUATION_BEFORE_REFRESH) {
+        refresh_token(app_handle, state).await?;
+    }
+
+    Ok(())
+}
+
 pub async fn refresh_token(
     app_handle: &tauri::AppHandle,
     state: &State<'_, Mutex<AppState>>,
-) -> Result<bool, AppError> {
+) -> Result<(), AppError> {
     let oauth2_client = get_outh2_client()?;
     let refresh_token = {
         let state = state.lock().unwrap();
@@ -126,7 +147,7 @@ pub async fn refresh_token(
 
     store_token_result(app_handle, state, token_result)?;
 
-    Ok(true)
+    Ok(())
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -246,16 +267,6 @@ pub async fn start_oauth(
         },
     };
 
-    // let expires_at = match token_result.expires_in() {
-    //     Some(expires_in) => {
-    //         Some(SystemTime::now().
-    //             .duration_since(SystemTime::UNIX_EPOCH)
-    //             .unwrap() + expires_in)
-    //     }
-    //     None => None
-    // };
-    //
-
     store_token_result(&app_handle, &state, token_result)?;
 
     Ok(true)
@@ -266,10 +277,18 @@ fn store_token_result(
     state: &State<'_, Mutex<AppState>>,
     token_result: StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>,
 ) -> Result<(), AppError> {
+    let expires_at = match token_result.expires_in() {
+        Some(expires_in) => SystemTime::now()
+            .checked_add(expires_in)
+            .and_then(|x| x.duration_since(SystemTime::UNIX_EPOCH).ok())
+            .map(|x| x.as_secs()),
+        None => None,
+    };
+
     let auth_state = AuthState {
         access_token: token_result.access_token().secret().to_string(),
         refresh_token: token_result.refresh_token().map(|x| x.secret().to_string()),
-        expires_at: None,
+        expires_at,
     };
     log::info!("Received access token: {}", auth_state.access_token);
     {
