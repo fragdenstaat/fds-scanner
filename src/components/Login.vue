@@ -13,7 +13,7 @@
                             <ion-loading message="Login gestartet..."></ion-loading>
                         </template>
                         <div v-else class="ion-text-center">
-                            <ion-button @click="startLogin">Einloggen mit FragDenStaat.de</ion-button>
+                            <ion-button @click="callStartLogin">Einloggen mit FragDenStaat.de</ion-button>
 
                             <hr class="ion-margin-vertical" />
                             <p>Zeigt FragDenStaat.de Ihnen einen QR Code an?</p>
@@ -44,18 +44,23 @@
 
 <script setup lang="ts">
 
-import { alertController, IonButton, IonCol, IonContent, IonGrid, IonHeader, IonIcon, IonLoading, IonPage, IonRow, IonTitle, IonToolbar, useIonRouter } from '@ionic/vue';
+import { alertController, IonButton, IonCol, IonContent, IonGrid, IonHeader, IonIcon, IonLoading, IonPage, IonRow, IonTitle, IonToolbar, onIonViewWillEnter, useIonRouter } from '@ionic/vue';
 import { qrCodeOutline } from 'ionicons/icons';
 import { onMounted, ref } from 'vue';
 
-import { account } from '../account.ts';
+import { account, useLoggedOutDeepLinkNavigation } from '../account.ts';
 
 import { useToastMessages } from '../utils.ts';
 
 useToastMessages();
+useLoggedOutDeepLinkNavigation(startLogin)
 
 const ionRouter = useIonRouter();
 let loginStarted = ref(false);
+
+onIonViewWillEnter(() => {
+    loginStarted.value = false;
+});
 
 onMounted(() => {
     if (account.startLoginOnMount()) {
@@ -63,11 +68,15 @@ onMounted(() => {
     }
 });
 
-async function startLogin() {
+const callStartLogin = () => {
+    startLogin();
+}
+
+async function startLogin(url?: string) {
     loginStarted.value = true;
     console.log("Starting login process");
 
-    let result = await account.startLogin();
+    let result = await account.startLogin(url);
     if (result === null) {
         console.log("Login result", result);
         loginStarted.value = true;

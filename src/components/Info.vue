@@ -42,8 +42,10 @@
 
 import { IonBackButton, IonButtons, IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/vue';
 
+import { useLoggedOutDeepLinkNavigation } from '../account.ts';
 import { useToastMessages } from '../utils.ts';
 
 useToastMessages();
+useLoggedOutDeepLinkNavigation()
 
 </script>

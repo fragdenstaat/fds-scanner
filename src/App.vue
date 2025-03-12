@@ -16,7 +16,8 @@
 import { IonApp, IonLoading, IonRouterOutlet, useIonRouter } from '@ionic/vue';
 import { getCurrent, onOpenUrl } from '@tauri-apps/plugin-deep-link';
 import { onBeforeMount, ref } from 'vue';
-import { account, getDeepPath } from './account.ts';
+import { account, getDeepPath, LOGIN_PATH } from './account.ts';
+
 
 let setupComplete = ref(false);
 const ionRouter = useIonRouter();
@@ -32,7 +33,7 @@ onBeforeMount(async () => {
     console.log("Loggedin, navigating to", nextPath);
     ionRouter.navigate(nextPath, 'none', 'replace');
   } else {
-    ionRouter.navigate('/login/', 'none', 'replace');
+    ionRouter.navigate(LOGIN_PATH, 'none', 'replace');
   }
   setupComplete.value = true;
 });
@@ -40,7 +41,10 @@ onBeforeMount(async () => {
 onOpenUrl((urls) => {
   console.log('deep link:', urls);
   if (urls !== null && urls.length > 0) {
-    ionRouter.navigate(getDeepPath(urls[0]), 'none', 'replace');
+    const deepUrl = urls[0]
+    if (account.isLoggedIn) {
+      ionRouter.navigate(getDeepPath(deepUrl), 'none', 'replace');
+    }
   }
 });
 

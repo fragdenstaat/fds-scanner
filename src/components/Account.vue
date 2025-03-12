@@ -28,7 +28,7 @@
 import { alertController, IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonLoading, IonPage, IonTitle, IonToolbar, useIonRouter } from '@ionic/vue';
 import { ref } from 'vue';
 
-import { account } from '../account.ts';
+import { account, LOGIN_PATH } from '../account.ts';
 
 const ionRouter = useIonRouter();
 let logoutStarted = ref(false);
@@ -39,7 +39,7 @@ async function startLogout() {
     let result = await account.startLogout();
     if (result === null) {
         logoutStarted.value = true;
-        ionRouter.navigate('/login/', 'root', 'pop');
+        ionRouter.navigate(LOGIN_PATH, 'root', 'pop');
 
     } else {
         console.error("Logout failed", result);

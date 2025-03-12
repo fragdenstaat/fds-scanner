@@ -1,4 +1,6 @@
+import { onIonViewDidLeave, onIonViewWillEnter } from '@ionic/vue';
 import { invoke } from '@tauri-apps/api/core';
+import { onOpenUrl } from '@tauri-apps/plugin-deep-link';
 import router from './router.ts';
 
 interface User {
@@ -14,6 +16,7 @@ type MaybeUser = User | null
 
 const BASE_ORIGIN = "https://fragdenstaat.de"
 const BASE_PATH = "/app/scanner/deep"
+export const LOGIN_PATH = "/login/"
 
 
 class Account {
@@ -161,9 +164,31 @@ export const getDeepPath = (deepUrl: string) => {
     return path + url.search
 }
 
+export const useLoggedOutDeepLinkNavigation = (startLogin?: (url: string) => void) => {
+    onIonViewWillEnter(() => {
+        onOpenUrl((urls) => {
+            console.log('deep link:', urls);
+            if (urls !== null && urls.length > 0) {
+                const deepUrl = urls[0]
+                if (!account.isLoggedIn) {
+                    if (startLogin) {
+                        startLogin(deepUrl)
+                    } else {
+                        account.setDeepUrl(deepUrl);
+                        router.push(LOGIN_PATH);
+                    }
+                }
+            }
+        }).then(unlisten => {
+            onIonViewDidLeave(() => unlisten())
+        })
+    })
+}
+
+
 router.beforeEach((to, _from, next) => {
-    if (!to.path.startsWith('/login/') && !to.path.startsWith('/info/') && !account.isLoggedIn) next({ name: 'login' })
-    else if (to.path.startsWith('/login/') && account.isLoggedIn) next({ name: 'home' })
+    if (!to.path.startsWith(LOGIN_PATH) && !to.path.startsWith('/info/') && !account.isLoggedIn) next({ name: 'login' })
+    else if (to.path.startsWith(LOGIN_PATH) && account.isLoggedIn) next({ name: 'home' })
     else next()
 })
 
