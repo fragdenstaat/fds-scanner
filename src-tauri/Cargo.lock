@@ -1113,7 +1113,7 @@ dependencies = [
 
 [[package]]
 name = "fds-scanner"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "base64 0.13.1",
  "chrono",
