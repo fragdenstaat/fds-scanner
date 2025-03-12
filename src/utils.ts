@@ -1,12 +1,13 @@
-import { toastController } from '@ionic/vue';
+import { onIonViewDidEnter, toastController } from '@ionic/vue';
 import { onMounted, ref } from 'vue';
 import { account } from './account.ts';
+
 
 
 export function useToastMessages() {
     let toast: HTMLIonToastElement | null = null
 
-    onMounted(async () => {
+    onIonViewDidEnter(async () => {
         let toastMessages = account.clearMessages()
         if (toastMessages.length === 0) {
             return
