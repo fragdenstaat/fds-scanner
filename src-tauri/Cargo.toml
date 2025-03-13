@@ -1,6 +1,6 @@
 [package]
 name = "fds-scanner"
-version = "0.1.8"
+version = "0.1.9"
 description = "FDS Scanner app"
 authors = ["Stefan Wehrmeyer"]
 edition = "2024"
