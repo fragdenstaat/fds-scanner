@@ -1126,6 +1126,7 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-build",
+ "tauri-plugin",
  "tauri-plugin-barcode-scanner",
  "tauri-plugin-deep-link",
  "tauri-plugin-documentcamera",
