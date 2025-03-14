@@ -44,6 +44,12 @@
           "pathPrefix": [
             "/app/scanner/deep/"
           ]
+        },
+        {
+          "host": "app.fragdenstaat.de",
+          "pathPrefix": [
+            "/app/scanner/deep/"
+          ]
         }
       ]
     }
