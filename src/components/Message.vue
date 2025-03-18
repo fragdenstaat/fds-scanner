@@ -109,9 +109,8 @@ const foirequestStore = useFoiRequestsStore()
 const store = useFoiAttachmentsStore()
 const route = useRoute<"message">();
 
-const isDraft = route.params.message === "draft";
 const messageId = parseInt(route.params.id);
-const scanPath = `/${route.params.message}/${messageId}/scan/`;
+const scanPath = `/message/${messageId}/scan/`;
 const error = ref<string | null>(null)
 let backHref = ref<string>("/")
 
@@ -131,7 +130,7 @@ const { loading, errorMessage, loadStoreObjects } = useStoreLoader(() => {
 let message: FoiMessage
 let request = ref<FoiRequest | null>(null)
 try {
-    message = await foimessageStore.getMessage(messageId, isDraft);
+    message = await foimessageStore.getMessage(messageId);
     backHref.value = `/request/${message.request_id}/`;
 } catch (e) {
     error.value = (e as Error).toString()

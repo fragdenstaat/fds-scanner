@@ -1,4 +1,3 @@
-use futures::future::join;
 use reqwest::header;
 use serde::de::DeserializeOwned;
 
@@ -16,7 +15,6 @@ use chrono::prelude::*;
 
 const REQUEST_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/request/";
 const MESSAGE_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/message/";
-const DRAFT_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/message/draft/";
 const UPLOAD_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/upload/";
 const ATTACHMENT_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/attachment/";
 const UPLOAD_URL_BASE: &str = "https://fragdenstaat.de";
@@ -24,7 +22,6 @@ const UPLOAD_URL_BASE: &str = "https://fragdenstaat.de";
 type FoiRequestId = u64;
 pub type MessageId = u64;
 type FoiMessageId = u64;
-type FoiMessageDraftId = u64;
 pub type FoiAttachmentId = u64;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -179,14 +176,7 @@ pub async fn get_foimessages(
     foirequest_id: FoiRequestId,
 ) -> Result<Vec<FoiMessage>, AppError> {
     let message_url = format!("{}?request={}&kind=post", MESSAGE_ENDPOINT, foirequest_id);
-    let draft_url = format!("{}?request={}&kind=post", DRAFT_ENDPOINT, foirequest_id);
-    let results = join(
-        get_all_objects::<FoiMessage>(message_url, &state),
-        get_all_objects::<FoiMessage>(draft_url, &state),
-    )
-    .await;
-    let (mut messages, drafts) = (results.0?, results.1?);
-    messages.extend_from_slice(&drafts);
+    let mut messages = get_all_objects::<FoiMessage>(message_url, &state).await?;
     messages.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
     messages.reverse();
     Ok(messages)
@@ -200,20 +190,6 @@ pub async fn get_foimessage(
     let client = get_api_client(&state)?;
 
     let url = format!("{}{}/", MESSAGE_ENDPOINT, foimessage_id);
-    let response = client.get(url).send().await?;
-    let api_response = response.json::<FoiMessage>().await?;
-
-    Ok(api_response)
-}
-
-#[tauri::command(rename_all = "snake_case")]
-pub async fn get_foimessagedraft(
-    state: State<'_, Mutex<AppState>>,
-    foimessage_id: FoiMessageDraftId,
-) -> Result<FoiMessage, AppError> {
-    let client = get_api_client(&state)?;
-
-    let url = format!("{}{}/", DRAFT_ENDPOINT, foimessage_id);
     let response = client.get(url).send().await?;
     let api_response = response.json::<FoiMessage>().await?;
 

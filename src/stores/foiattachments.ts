@@ -19,7 +19,6 @@ export type FoiAttachment = FoiAttachmentApi & {
     path: string
     message_path: string
     message_id: number
-    message_is_draft: boolean
 }
 
 const makeFoiAttachment = (att: FoiAttachmentApi): FoiAttachment => {
@@ -31,15 +30,13 @@ const makeFoiAttachment = (att: FoiAttachmentApi): FoiAttachment => {
     }
     const parts = att.belongs_to.split('/')
     const message_id = parts[parts.length - 2]
-    const message_type = parts[parts.length - 3]
     return {
         ...att,
         path: `/attachment/${att.id}/`,
         filetype_label: filetype_label,
         size_label: (att.size / 1024).toFixed(2) + ' KB',
-        message_path: `/${message_type}/${message_id}/`,
-        message_id: parseInt(message_id),
-        message_is_draft: message_type === 'draft'
+        message_path: `/message/${message_id}/`,
+        message_id: parseInt(message_id)
     }
 }
 export type FoiMessageId = number

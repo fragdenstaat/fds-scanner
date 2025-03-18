@@ -42,9 +42,8 @@ useToastMessages()
 const foimessageStore = useFoiMessagesStore()
 const route = useRoute<"message">();
 
-const isDraft = route.params.message === "draft";
 const messageId = parseInt(route.params.id);
-const messagePath = `/${route.params.message}/${messageId}/`;
+const messagePath = `/message/${messageId}/`;
 
 const ionRouter = useIonRouter();
 const errorMessage = ref<string>("");
@@ -52,7 +51,7 @@ const errorMessage = ref<string>("");
 
 let message: FoiMessage
 try {
-    message = await foimessageStore.getMessage(messageId, isDraft);
+    message = await foimessageStore.getMessage(messageId);
 } catch (e) {
     errorMessage.value = (e as Error).toString()
 }

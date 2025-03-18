@@ -80,7 +80,7 @@ try {
 }
 
 onMounted(async () => {
-    message.value = await foimessageStore.getMessage(attachment.message_id, attachment.message_is_draft);
+    message.value = await foimessageStore.getMessage(attachment.message_id);
     request.value = await foirequestStore.getRequest(message.value.request_id);
 });
 
