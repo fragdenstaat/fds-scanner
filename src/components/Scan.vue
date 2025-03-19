@@ -49,7 +49,7 @@ const ionRouter = useIonRouter();
 const errorMessage = ref<string>("");
 
 
-let message: FoiMessage
+let message: FoiMessage | null = null;
 try {
     message = await foimessageStore.getMessage(messageId);
 } catch (e) {
@@ -68,6 +68,9 @@ function handlePluginEvent(event: PdfProgress) {
 let loading: HTMLIonLoadingElement;
 
 onMounted(async () => {
+    if (message === null) {
+        return
+    }
     loading = await loadingController.create({
         message: '',
     });
@@ -98,6 +101,9 @@ async function showError(message: string) {
 
 
 async function startScan() {
+    if (message === null) {
+        return
+    }
     // Is there anything left to upload?
     loading.message = "Vorbereitung..."
     await loading.present();
