@@ -165,6 +165,7 @@ export const getDeepPath = (deepUrl: string) => {
 }
 
 export const useLoggedOutDeepLinkNavigation = (startLogin?: (url: string) => void) => {
+    let unlistenFunc: (() => void) | null = null
     onIonViewWillEnter(() => {
         onOpenUrl((urls) => {
             console.log('deep link:', urls);
@@ -180,8 +181,14 @@ export const useLoggedOutDeepLinkNavigation = (startLogin?: (url: string) => voi
                 }
             }
         }).then(unlisten => {
-            onIonViewDidLeave(() => unlisten())
+            unlistenFunc = unlisten
         })
+    })
+    onIonViewDidLeave(() => {
+        if (unlistenFunc !== null) {
+            unlistenFunc()
+            unlistenFunc = null
+        }
     })
 }
 
