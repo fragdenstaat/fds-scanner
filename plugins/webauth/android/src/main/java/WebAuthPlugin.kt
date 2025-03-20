@@ -23,7 +23,6 @@ class WebAuthArgs {
 class WebAuthPlugin(private val activity: Activity): Plugin(activity) {
     private var savedInvoke: Invoke? = null
     private var loginOpened: Boolean = false
-    private val CHROME_PACKAGE_NAME: String = "com.android.chrome"
 
     @Command
     fun start_auth(invoke: Invoke) {
@@ -36,7 +35,6 @@ class WebAuthPlugin(private val activity: Activity): Plugin(activity) {
         builder.setDownloadButtonEnabled(false)
         val customTabsIntent = builder.build()
         customTabsIntent.intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        customTabsIntent.intent.setPackage(CHROME_PACKAGE_NAME);
         loginOpened = true
         customTabsIntent.launchUrl(activity, Uri.parse(args.url))
     }
