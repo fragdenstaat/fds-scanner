@@ -28,11 +28,13 @@ pub type FoiAttachmentId = u64;
 pub struct PublicBody {
     id: u64,
     name: String,
+    resource_uri: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FoiRequest {
     id: FoiRequestId,
+    resource_uri: String,
     url: String,
     title: String,
     created_at: String,
@@ -193,6 +195,27 @@ pub async fn get_foimessage(
     let response = client.get(url).send().await?;
     let api_response = response.json::<FoiMessage>().await?;
 
+    Ok(api_response)
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CreateMessage {
+    request: String,
+    kind: String,
+    timestamp: String,
+    is_response: bool,
+    recipient_public_body: Option<String>,
+    sender_public_body: Option<String>,
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub async fn create_foimessage(
+    state: State<'_, Mutex<AppState>>,
+    message: CreateMessage,
+) -> Result<FoiMessage, AppError> {
+    let client = get_api_client(&state)?;
+    let response = client.post(MESSAGE_ENDPOINT).json(&message).send().await?;
+    let api_response = response.json::<FoiMessage>().await?;
     Ok(api_response)
 }
 

@@ -20,9 +20,9 @@
                 </ion-refresher>
 
 
-                <!-- <ion-button :router-link="createMessageUrl" router-direction="forward">
-                Neue Postnachricht anlegen
-            </ion-button> -->
+                <ion-button v-if="!loading && !hasDraft" :router-link="createMessageUrl" router-direction="forward">
+                    Neue Postnachricht anlegen
+                </ion-button>
 
                 <template v-if="!loading && store.messages.length === 0">
                     <p>Keine Postnachrichten vorhanden</p>
@@ -59,6 +59,7 @@
 import {
     IonBackButton,
     IonBadge,
+    IonButton,
     IonButtons,
     IonContent, IonHeader,
     IonItem,
@@ -70,7 +71,7 @@ import {
     IonSpinner,
     IonTitle, IonToolbar
 } from '@ionic/vue';
-import { onUnmounted, ref } from 'vue';
+import { computed, onUnmounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useFoiMessagesStore } from '../stores/foimessages.ts';
 import { FoiRequest, useFoiRequestsStore } from '../stores/foirequests.ts';
@@ -85,7 +86,7 @@ const route = useRoute<"request">();
 const requestId = parseInt(route.params.id);
 const error = ref<string | null>(null)
 
-// const createMessageUrl = `/request/${requestId}/create-message/`;
+const createMessageUrl = `/request/${requestId}/create-message/`;
 let request: FoiRequest
 try {
     request = await foirequestStore.getRequest(requestId);
@@ -96,6 +97,10 @@ try {
 
 const { loading, errorMessage, loadStoreObjects } = useStoreLoader(() => {
     return store.getMessages(requestId);
+});
+
+const hasDraft = computed(() => {
+    return store.messages.some(m => m.is_draft);
 });
 
 async function handleRefresh(event: CustomEvent) {

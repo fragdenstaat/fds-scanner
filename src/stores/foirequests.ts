@@ -4,18 +4,20 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { toLocaleDateString } from '../utils';
 
-type PublicBodyApi = {
+export type PublicBody = {
     id: number;
     name: string;
+    resource_uri: string;
 }
 
 
 type FoiRequestApi = {
     id: number;
+    resource_uri: string;
     title: string;
     created_at: string;
     last_message: string;
-    public_body: PublicBodyApi;
+    public_body: PublicBody;
 };
 
 export type FoiRequest = FoiRequestApi & {

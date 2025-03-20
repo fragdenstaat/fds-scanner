@@ -22,6 +22,15 @@ export type FoiMessage = FoiMessageApi & {
     path: string;
 };
 
+export type CreateMessage = {
+    request: String;
+    timestamp: string;
+    kind: "post";
+    is_response: boolean;
+    sender_public_body: string | null;
+    recipient_public_body: string | null;
+}
+
 const makeFoiMessage = (mes: FoiMessageApi): FoiMessage => {
     let request_id = mes.request.split('/')[mes.request.split('/').length - 2]
     return {
@@ -66,5 +75,20 @@ export const useFoiMessagesStore = defineStore('foimessages', () => {
         messages.value = []
     }
 
-    return { messages, getMessage, getMessages, clearMessages }
+    const createMessage = async (message: CreateMessage): Promise<FoiMessage> => {
+        try {
+            const apiMessage = await invoke<FoiMessageApi>("create_foimessage", { message });
+            const newMessage = makeFoiMessage(apiMessage);
+            messages.value = [
+                newMessage,
+                ...messages.value
+            ]
+            return newMessage
+        } catch (error) {
+            console.error('Error creating message!', error)
+            throw error
+        }
+    }
+
+    return { messages, getMessage, getMessages, clearMessages, createMessage }
 })
