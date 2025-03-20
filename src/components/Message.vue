@@ -10,7 +10,7 @@
         </ion-header>
         <ion-content class="ion-padding">
             <error-message v-if="error" :message="error" />
-            <template v-else>
+            <template v-else-if="message">
                 <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
                     <ion-refresher-content></ion-refresher-content>
                 </ion-refresher>
@@ -127,7 +127,7 @@ const { loading, errorMessage, loadStoreObjects } = useStoreLoader(() => {
     return store.getAttachments(messageId);
 });
 
-let message: FoiMessage
+let message: FoiMessage | null = null
 let request = ref<FoiRequest | null>(null)
 try {
     message = await foimessageStore.getMessage(messageId);
@@ -137,12 +137,19 @@ try {
 }
 
 onMounted(async () => {
-    let result = await Promise.all([
-        foirequestStore.getRequest(message.request_id),
-        store.getAttachments(messageId)
-    ])
-    request.value = result[0]
-    loading.value = false;
+    if (message === null) {
+        return
+    }
+    try {
+        let result = await Promise.all([
+            foirequestStore.getRequest(message.request_id),
+            store.getAttachments(messageId)
+        ])
+        request.value = result[0]
+        loading.value = false;
+    } catch (e) {
+        error.value = (e as Error).toString()
+    }
 });
 onUnmounted(() => {
     store.clearAttachments();
