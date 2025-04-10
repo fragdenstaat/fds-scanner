@@ -116,22 +116,6 @@ impl AppState {
     }
 }
 
-#[cfg(target_os = "ios")]
-fn add_extra_plugins<T>(builder: tauri::Builder<T>) -> tauri::Builder<T>
-where
-    T: tauri::Runtime,
-{
-    builder.plugin(tauri_plugin_barcode_scanner::init())
-}
-
-#[cfg(not(target_os = "ios"))]
-fn add_extra_plugins<T>(builder: tauri::Builder<T>) -> tauri::Builder<T>
-where
-    T: tauri::Runtime,
-{
-    builder
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let _guard = sentry::init((
@@ -142,7 +126,7 @@ pub fn run() {
         },
     ));
 
-    let mut builder = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -173,11 +157,11 @@ pub fn run() {
             upload_document,
         ])
         .setup(|app| {
+            #[cfg(mobile)]
+            app.handle().plugin(tauri_plugin_barcode_scanner::init());
             app.manage(Mutex::new(AppState::load(app.handle())?));
             Ok(())
         });
-
-    builder = add_extra_plugins(builder);
 
     builder
         .run(tauri::generate_context!())
