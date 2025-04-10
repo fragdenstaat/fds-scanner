@@ -27,11 +27,12 @@ const USER_ENDPOINT: &str = "https://fragdenstaat.de/api/v1/user/";
 // Minimum duration in seconds before token expiration to refresh it
 const MIN_DUATION_BEFORE_REFRESH: u64 = 60 * 60;
 
-const SCOPE: [&str; 6] = [
+const SCOPE: [&str; 7] = [
     "read:user",
     "read:profile",
     "read:email",
     "read:request",
+    "write:request",
     "write:message",
     "write:attachment",
 ];
