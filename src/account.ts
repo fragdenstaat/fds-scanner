@@ -14,7 +14,7 @@ interface User {
 type MaybeUser = User | null
 
 
-const BASE_ORIGIN = "https://fragdenstaat.de"
+const BASE_ORIGIN = "https://app.fragdenstaat.de"
 const BASE_PATH = "/app/scanner/deep"
 export const LOGIN_PATH = "/login/"
 
