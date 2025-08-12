@@ -26,9 +26,39 @@
                     <template v-if="message.sender">von {{ message.sender }}</template>
                     vom {{ message.timestamp_label }}
                 </p>
-                <ion-badge v-if="message.is_draft">Entwurf</ion-badge>
 
-                <div class="ion-padding ion-text-center">
+                <ion-card v-if="scanDoneAfterDeeplink && message.is_draft" color="secondary">
+                    <ion-card-header>
+                        <ion-card-title>Dokument wurde hochgeladen</ion-card-title>
+                    </ion-card-header>
+                    <ion-card-content>
+                        <p>
+                            Scannen Sie ein weiteres Dokument oder führen Sie das Anlegen der Postnachricht auf der
+                            Webseite weiter.
+                        </p>
+                    </ion-card-content>
+                </ion-card>
+                <ion-card v-if="message.is_draft && request" color="warning">
+                    <ion-card-header>
+                        <ion-card-title>Entwurf</ion-card-title>
+                    </ion-card-header>
+                    <ion-card-content>
+                        <p>Diese Nachricht ist noch ein Entwurf. Bitte vollenden Sie das Anlegen der Postnachricht.</p>
+
+                        <ion-button :router-link="scanPath" router-direction="forward">
+                            Scanne weiteres Dokument
+                        </ion-button>
+                        <hr />
+                        <p>
+                            Haben Sie alle Dokumente gescannt?
+                        </p>
+                        <ion-button @click="openPostUpload">
+                            <ion-icon slot="start" :icon="openOutline" aria-label="Öffnen"></ion-icon>
+                            Weiter auf der Webseite
+                        </ion-button>
+                    </ion-card-content>
+                </ion-card>
+                <div v-else class="ion-padding ion-text-center">
                     <ion-button :router-link="scanPath" router-direction="forward">
                         <template v-if="highlightAttachment">
                             Scanne weiteres Dokument
@@ -39,17 +69,7 @@
                     </ion-button>
                 </div>
 
-                <ion-card v-if="scanDoneAfterDeeplink" color="secondary">
-                    <ion-card-header>
-                        <ion-card-title>Dokument wurde hochgeladen</ion-card-title>
-                    </ion-card-header>
-                    <ion-card-content v-if="message.is_draft">
-                        Scannen Sie ein weiteres Dokument oder führen Sie das Anlegen der Postnachricht auf der Webseite
-                        weiter.
-                    </ion-card-content>
-                </ion-card>
-
-                <ion-list>
+                <ion-list v-if="store.attachments.length > 0">
                     <ion-item v-for="attachment in store.attachments" :detail="false" :key="attachment.id" href="#"
                         :color="attachment.id === highlightAttachment ? 'success' : undefined"
                         @click="openAttachment(attachment.site_url)">
@@ -59,7 +79,8 @@
                                 {{ attachment.filetype_label }} / {{ attachment.size_label }}
                             </p>
                         </ion-label>
-                        <ion-icon slot="end" :icon="openOutline" aria-label="Öffnen"></ion-icon>
+                        <ion-icon v-if="!message.is_draft" slot="end" :icon="openOutline"
+                            aria-label="Öffnen"></ion-icon>
                     </ion-item>
                 </ion-list>
                 <div v-if="loading" class="ion-text-center">
@@ -76,7 +97,6 @@
 <script setup lang="ts">
 import {
     IonBackButton,
-    IonBadge,
     IonButton,
     IonButtons,
     IonCard,
@@ -90,7 +110,7 @@ import {
     IonRefresher, IonRefresherContent,
     IonSkeletonText,
     IonSpinner,
-    IonTitle, IonToolbar,
+    IonTitle, IonToolbar
 } from '@ionic/vue';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { openOutline } from 'ionicons/icons';
@@ -164,7 +184,16 @@ async function handleRefresh(event: CustomEvent) {
 }
 
 function openAttachment(url: string) {
-    openUrl(url);
+    if (message && !message.is_draft) {
+        openUrl(url);
+    }
+}
+
+function openPostUpload() {
+    if (request.value) {
+        const url = `https://fragdenstaat.de${request.value.url}postnachricht-erstellen/`
+        openUrl(url);
+    }
 }
 
 </script>
