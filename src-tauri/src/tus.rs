@@ -56,23 +56,11 @@ pub const UPLOAD_OFFSET: &str = "upload-offset";
 /// Indicates the size of the entire upload in bytes.
 pub const UPLOAD_LENGTH: &str = "upload-length";
 
-/// A comma-separated list of protocol versions supported by the server.
-pub const TUS_VERSION: &str = "tus-version";
-
 /// The version of the protocol used by the client or the server.
 pub const TUS_RESUMABLE: &str = "tus-resumable";
 
-/// A comma-separated list of the extensions supported by the server.
-pub const TUS_EXTENSION: &str = "tus-extension";
-
-/// Integer indicating the maximum allowed size of an entire upload in bytes.
-pub const TUS_MAX_SIZE: &str = "tus-max-size";
-
 /// Use this header if its environment does not support the PATCH or DELETE methods.
 pub const CONTENT_TYPE: &str = "content-type";
-
-/// Use this header if its environment does not support the PATCH or DELETE methods.
-//pub const UPLOAD_DEFER_LENGTH: & str = "upload-defer-length";
 
 /// Use this header if its environment does not support the PATCH or DELETE methods.
 pub const UPLOAD_METADATA: &str = "upload-metadata";
@@ -115,25 +103,6 @@ impl TusClient {
             .headers()
             .get(UPLOAD_LENGTH)
             .and_then(|l| l.to_str().ok()?.parse::<usize>().ok());
-        let metadata = response
-            .headers()
-            .get(UPLOAD_METADATA)
-            .and_then(|data| base64::decode(data).ok())
-            .map(|decoded| {
-                String::from_utf8(decoded).unwrap().split(';').fold(
-                    HashMap::new(),
-                    |mut acc, key_val| {
-                        let mut parts = key_val.splitn(2, ':');
-                        if let Some(key) = parts.next() {
-                            acc.insert(
-                                String::from(key),
-                                String::from(parts.next().unwrap_or_default()),
-                            );
-                        }
-                        acc
-                    },
-                )
-            });
 
         if response.status().is_client_error() || bytes_uploaded.is_none() {
             return Err(TusError::NotFoundError);
@@ -144,40 +113,6 @@ impl TusClient {
         Ok(UploadInfo {
             bytes_uploaded,
             total_size,
-            metadata,
-        })
-    }
-
-    pub async fn get_server_info(&self, url: &str) -> Result<ServerInfo, TusError> {
-        let response = self.client.head(url).send().await?;
-
-        if ![200_u16, 204].contains(&response.status().as_u16()) {
-            return Err(TusError::UnexpectedStatusCode(response.status().as_u16()));
-        }
-
-        let supported_versions: Vec<String> = response
-            .headers()
-            .get(TUS_VERSION)
-            .ok_or(TusError::MissingHeader(TUS_VERSION.to_owned()))?
-            .to_str()?
-            .split(',')
-            .map(String::from)
-            .collect();
-        let extensions: Vec<TusExtension> = if let Some(ext) = response.headers().get(TUS_EXTENSION)
-        {
-            ext.to_str()?.split(',').flat_map(str::parse).collect()
-        } else {
-            Vec::new()
-        };
-        let max_upload_size = response
-            .headers()
-            .get(TUS_MAX_SIZE)
-            .and_then(|h| h.to_str().ok()?.parse::<usize>().ok());
-
-        Ok(ServerInfo {
-            supported_versions,
-            extensions,
-            max_upload_size,
         })
     }
 
@@ -254,11 +189,6 @@ impl TusClient {
         Ok(())
     }
 
-    /// Create a file on the server, receiving the upload URL of the file.
-    pub async fn create(&self, url: &str, path: &Path) -> Result<String, TusError> {
-        self.create_with_metadata(url, path, HashMap::new()).await
-    }
-
     /// Create a file on the server including the specified metadata, receiving the upload URL of the file.
     pub async fn create_with_metadata(
         &self,
@@ -297,19 +227,6 @@ impl TusClient {
 
         Ok(location.unwrap().to_str()?.to_owned())
     }
-
-    /// Delete a file on the server.
-    pub async fn delete(&self, url: &str) -> Result<(), TusError> {
-        let req = self.create_request(reqwest::Method::DELETE, url);
-
-        let response = req.send().await?;
-
-        if response.status().as_u16() != 204 {
-            return Err(TusError::UnexpectedStatusCode(response.status().as_u16()));
-        }
-
-        Ok(())
-    }
 }
 
 /// Describes a file on the server.
@@ -319,19 +236,6 @@ pub struct UploadInfo {
     pub bytes_uploaded: usize,
     /// The total size of the file.
     pub total_size: Option<usize>,
-    /// Metadata supplied when the file was created.
-    pub metadata: Option<HashMap<String, String>>,
-}
-
-/// Describes the tus enabled server.
-#[derive(Debug)]
-pub struct ServerInfo {
-    /// The different versions of the tus protocol supported by the server, ordered by preference.
-    pub supported_versions: Vec<String>,
-    /// The extensions to the protocol supported by the server.
-    pub extensions: Vec<TusExtension>,
-    /// The maximum supported total size of a file.
-    pub max_upload_size: Option<usize>,
 }
 
 /// Enumerates the extensions to the tus protocol.

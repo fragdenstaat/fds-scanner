@@ -158,7 +158,7 @@ pub fn run() {
         ])
         .setup(|app| {
             #[cfg(mobile)]
-            app.handle().plugin(tauri_plugin_barcode_scanner::init());
+            app.handle().plugin(tauri_plugin_barcode_scanner::init())?;
             app.manage(Mutex::new(AppState::load(app.handle())?));
             Ok(())
         });
