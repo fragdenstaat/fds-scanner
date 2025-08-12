@@ -14,7 +14,9 @@ interface User {
 type MaybeUser = User | null
 
 
-const BASE_ORIGIN = "https://app.fragdenstaat.de"
+const DOMAIN = "fragdenstaat.de"
+const APP_ORIGIN = "https://app.fragdenstaat.de"
+const START_URL_ORIGIN = "https://fragdenstaat.de"
 const BASE_PATH = "/app/scanner/deep"
 export const LOGIN_PATH = "/login/"
 
@@ -84,25 +86,44 @@ class Account {
         return this.#user;
     }
 
+    sanitizeStartUrl(startUrl: string): string | null {
+        const url = new URL(startUrl)
+        if (url.origin === START_URL_ORIGIN) {
+            return startUrl
+        }
+        return null
+    }
+
     async startLogin(startUrl: string | null = null): Promise<string | null> {
         if (startUrl !== null) {
             let tempUrl = new URL(startUrl)
-            if (tempUrl.origin === BASE_ORIGIN && tempUrl.pathname.startsWith(BASE_PATH)) {
+            if (tempUrl.origin === APP_ORIGIN && tempUrl.pathname.startsWith(BASE_PATH)) {
+                // Use the start_url parameter instead if it exists 
                 let tempStartUrl = tempUrl.searchParams.get("start_url")
                 if (tempStartUrl !== null) {
-                    startUrl = tempStartUrl
                     // Set start_url param as login start and remove from deep url
+                    startUrl = this.sanitizeStartUrl(tempStartUrl)
                     tempUrl.searchParams.delete("start_url")
                     this.#deepUrl = tempUrl.toString()
+                } else {
+                    // If the paramter is not present
+                    // set url as deep url
+                    this.#deepUrl = startUrl
+                    startUrl = null
                 }
-            } else {
+            } else if (tempUrl.origin === START_URL_ORIGIN) {
+                // If the URL is a deep link, set it as the deep URL
+                this.#deepUrl = startUrl
                 startUrl = null
+            } else {
+                // if the given URL is not an App URL, ignore it
+                return "Invalid URL"
             }
         } else if (this.#deepUrl !== null) {
             let deepUrl = new URL(this.#deepUrl)
             let deepStartUrl = deepUrl.searchParams.get("start_url")
             if (deepStartUrl !== null) {
-                startUrl = deepStartUrl
+                startUrl = this.sanitizeStartUrl(deepStartUrl)
                 // Set start_url param as login start and remove from deep url
                 deepUrl.searchParams.delete("start_url")
                 this.#deepUrl = deepUrl.toString()
@@ -164,16 +185,21 @@ export const getDeepPath = (deepUrl: string) => {
     return path + url.search
 }
 
-export const useLoggedOutDeepLinkNavigation = (startLogin?: (url: string) => void) => {
+export const useLoggedOutDeepLinkNavigation = (startLoginFunc?: (url: string) => void) => {
     let unlistenFunc: (() => void) | null = null
     onIonViewWillEnter(() => {
         onOpenUrl((urls) => {
             console.log('deep link:', urls);
             if (urls !== null && urls.length > 0) {
                 const deepUrl = urls[0]
+                const url = new URL(deepUrl)
+                if (url.protocol !== "https:" || !url.origin.endsWith(DOMAIN)) {
+                    console.warn('Invalid deep link URL:', url)
+                    return
+                }
                 if (!account.isLoggedIn) {
-                    if (startLogin) {
-                        startLogin(deepUrl)
+                    if (startLoginFunc) {
+                        startLoginFunc(deepUrl)
                     } else {
                         account.setDeepUrl(deepUrl);
                         router.push(LOGIN_PATH);
