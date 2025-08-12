@@ -10,8 +10,10 @@
         </ion-header>
         <ion-content class="ion-padding">
             <h2>Über diese App</h2>
-            <p>FDS Scanner ist eine App von FragDenStaat, um das Scannen und Hochladen von Post, die im Rahmen von
-                Anfragen nach den Informationsfreiheitsgesetzen empfangen oder gesendet wurde zu vereinfachen.</p>
+            <p>
+                FDS Scanner ist eine App von FragDenStaat, um das Scannen und Hochladen von Post, die im Rahmen von
+                Anfragen nach den Informationsfreiheitsgesetzen empfangen oder gesendet wurde, zu vereinfachen.
+            </p>
 
             <p>FragDenStaat ist ein Projekt des Open Knowledge Foundation Deutschland e.V.</p>
 
