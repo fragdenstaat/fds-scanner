@@ -15,6 +15,7 @@ type FoiRequestApi = {
     id: number;
     resource_uri: string;
     title: string;
+    url: string;
     created_at: string;
     last_message: string;
     public_body: PublicBody;
