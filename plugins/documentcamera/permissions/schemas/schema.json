@@ -49,7 +49,7 @@
           "minimum": 1.0
         },
         "description": {
-          "description": "Human-readable description of what the permission does. Tauri convention is to use <h4> headings in markdown content for Tauri documentation generation purposes.",
+          "description": "Human-readable description of what the permission does. Tauri convention is to use `<h4>` headings in markdown content for Tauri documentation generation purposes.",
           "type": [
             "string",
             "null"
@@ -111,7 +111,7 @@
           "type": "string"
         },
         "description": {
-          "description": "Human-readable description of what the permission does. Tauri internal convention is to use <h4> headings in markdown content for Tauri documentation generation purposes.",
+          "description": "Human-readable description of what the permission does. Tauri internal convention is to use `<h4>` headings in markdown content for Tauri documentation generation purposes.",
           "type": [
             "string",
             "null"
@@ -297,37 +297,44 @@
         {
           "description": "Enables the registerListener command without any pre-configured scope.",
           "type": "string",
-          "const": "allow-registerListener"
+          "const": "allow-registerListener",
+          "markdownDescription": "Enables the registerListener command without any pre-configured scope."
         },
         {
           "description": "Denies the registerListener command without any pre-configured scope.",
           "type": "string",
-          "const": "deny-registerListener"
+          "const": "deny-registerListener",
+          "markdownDescription": "Denies the registerListener command without any pre-configured scope."
         },
         {
           "description": "Enables the register_listener command without any pre-configured scope.",
           "type": "string",
-          "const": "allow-register-listener"
+          "const": "allow-register-listener",
+          "markdownDescription": "Enables the register_listener command without any pre-configured scope."
         },
         {
           "description": "Denies the register_listener command without any pre-configured scope.",
           "type": "string",
-          "const": "deny-register-listener"
+          "const": "deny-register-listener",
+          "markdownDescription": "Denies the register_listener command without any pre-configured scope."
         },
         {
           "description": "Enables the scan command without any pre-configured scope.",
           "type": "string",
-          "const": "allow-scan"
+          "const": "allow-scan",
+          "markdownDescription": "Enables the scan command without any pre-configured scope."
         },
         {
           "description": "Denies the scan command without any pre-configured scope.",
           "type": "string",
-          "const": "deny-scan"
+          "const": "deny-scan",
+          "markdownDescription": "Denies the scan command without any pre-configured scope."
         },
         {
-          "description": "Default permissions for the plugin",
+          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-scan`\n- `allow-registerListener`",
           "type": "string",
-          "const": "default"
+          "const": "default",
+          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-scan`\n- `allow-registerListener`"
         }
       ]
     }
