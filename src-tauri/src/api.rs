@@ -95,7 +95,7 @@ pub fn get_api_client(
         header::HeaderValue::from_static("application/json"),
     );
     let mut auth_value =
-        header::HeaderValue::from_str(format!("Bearer {}", access_token).as_str()).unwrap();
+        header::HeaderValue::from_str(format!("Bearer {access_token}").as_str()).unwrap();
     auth_value.set_sensitive(true);
     headers.insert(header::AUTHORIZATION, auth_value);
 
@@ -120,7 +120,7 @@ pub async fn get_foirequests(
     let user_id = get_user_id(&state)?;
     let client = get_api_client(&state)?;
 
-    let mut next = Some(format!("{}?user={}", REQUEST_ENDPOINT, user_id));
+    let mut next = Some(format!("{REQUEST_ENDPOINT}?user={user_id}"));
     while let Some(next_url) = next {
         let response = client.get(next_url).send().await?;
         let api_response = response.json::<ApiResponse<FoiRequest>>().await?;
@@ -139,7 +139,7 @@ pub async fn get_foirequest(
 ) -> Result<FoiRequest, AppError> {
     let client = get_api_client(&state)?;
 
-    let url = format!("{}{}/", REQUEST_ENDPOINT, request_id);
+    let url = format!("{REQUEST_ENDPOINT}{request_id}/");
     let response = client.get(url).send().await?;
     let api_response = response.json::<FoiRequest>().await?;
 
@@ -177,7 +177,7 @@ pub async fn get_foimessages(
     state: State<'_, Mutex<AppState>>,
     foirequest_id: FoiRequestId,
 ) -> Result<Vec<FoiMessage>, AppError> {
-    let message_url = format!("{}?request={}&kind=post", MESSAGE_ENDPOINT, foirequest_id);
+    let message_url = format!("{MESSAGE_ENDPOINT}?request={foirequest_id}&kind=post");
     let mut messages = get_all_objects::<FoiMessage>(message_url, &state).await?;
     messages.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
     messages.reverse();
@@ -191,7 +191,7 @@ pub async fn get_foimessage(
 ) -> Result<FoiMessage, AppError> {
     let client = get_api_client(&state)?;
 
-    let url = format!("{}{}/", MESSAGE_ENDPOINT, foimessage_id);
+    let url = format!("{MESSAGE_ENDPOINT}{foimessage_id}/");
     let response = client.get(url).send().await?;
     let api_response = response.json::<FoiMessage>().await?;
 
@@ -224,7 +224,7 @@ pub async fn get_foiattachments(
     state: State<'_, Mutex<AppState>>,
     foimessage_id: FoiMessageId,
 ) -> Result<Vec<FoiAttachment>, AppError> {
-    let url = format!("{}?belongs_to={}", ATTACHMENT_ENDPOINT, foimessage_id);
+    let url = format!("{ATTACHMENT_ENDPOINT}?belongs_to={foimessage_id}");
     let objects = get_all_objects(url, &state).await?;
     Ok(objects)
 }
@@ -236,7 +236,7 @@ pub async fn get_foiattachment(
 ) -> Result<FoiAttachment, AppError> {
     let client = get_api_client(&state)?;
 
-    let url = format!("{}{}/", ATTACHMENT_ENDPOINT, foiattachment_id);
+    let url = format!("{ATTACHMENT_ENDPOINT}{foiattachment_id}/");
     let response = client.get(url).send().await?;
     let api_response = response.json::<FoiAttachment>().await?;
 
@@ -254,13 +254,13 @@ pub async fn create_upload(client: &TusClient, file_path: &Path) -> Result<Strin
 
     let mut metadata = HashMap::new();
     metadata.insert("filetype".to_string(), "application/pdf".to_string());
-    metadata.insert("filename".to_string(), format!("scan_{}.pdf", current_date));
+    metadata.insert("filename".to_string(), format!("scan_{current_date}.pdf"));
 
     let upload_url = client
         .create_with_metadata(UPLOAD_ENDPOINT, file_path, metadata)
         .await?;
 
-    log::info!("Upload URL: {}", upload_url);
+    log::info!("Upload URL: {upload_url}");
     // let upload_url = Url::parse(&upload_url).unwrap();
     // let upload_url = match upload_url.host_str() {
     //     Some(_) => upload_url.to_string(),
@@ -268,7 +268,7 @@ pub async fn create_upload(client: &TusClient, file_path: &Path) -> Result<Strin
     //         format!("{}{}", UPLOAD_URL_BASE, upload_url)
     //     }
     // };
-    let upload_url = format!("{}{}", UPLOAD_URL_BASE, upload_url);
+    let upload_url = format!("{UPLOAD_URL_BASE}{upload_url}");
 
     Ok(upload_url)
 }
@@ -302,10 +302,7 @@ pub async fn create_attachment(
 ) -> Result<FoiAttachment, AppError> {
     let client = get_api_client(state)?;
 
-    log::info!(
-        "Message resource URI on attachment: {}",
-        message_resource_uri
-    );
+    log::info!("Message resource URI on attachment: {message_resource_uri}");
 
     let att_data = CreateAttachment {
         message: message_resource_uri,
@@ -318,7 +315,7 @@ pub async fn create_attachment(
         .send()
         .await?;
     let response_text = response.text().await?;
-    log::info!("Response: {}", response_text);
+    log::info!("Response: {response_text}");
     // let attachment = response.json::<FoiAttachment>().await?;
     let attachment = serde_json::from_str::<FoiAttachment>(&response_text).unwrap();
     Ok(attachment)
