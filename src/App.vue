@@ -51,6 +51,10 @@ onOpenUrl((urls) => {
 </script>
 
 <style>
+html {
+  height: 100dvh;
+}
+
 body {
   background-color: #f7f7f7;
 }
