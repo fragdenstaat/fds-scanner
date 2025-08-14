@@ -14,13 +14,29 @@
   ],
   "permissions": [
     "core:default",
-    "shell:allow-open",
     "webauth:default",
     "log:default",
     "barcode-scanner:default",
     "store:default",
     "documentcamera:default",
     "deep-link:default",
-    "opener:default"
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        {
+          "url": "https://fragdenstaat.de/*"
+        },
+        {
+          "url": "https://media.frag-den-staat.de/*",
+          "app": "inAppBrowser"
+        },
+        {
+          "url": "https://okfn.de/*"
+        },
+        {
+          "url": "fragdenstaat:*"
+        }
+      ]
+    }
   ]
 }
