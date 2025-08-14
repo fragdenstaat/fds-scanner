@@ -42,7 +42,7 @@
                     <ion-card-header>
                         <ion-card-title>Entwurf</ion-card-title>
                     </ion-card-header>
-                    <ion-card-content>
+                    <ion-card-content v-if="store.attachments.length > 0">
                         <p>Diese Nachricht ist noch ein Entwurf. Bitte vollenden Sie das Anlegen der Postnachricht.</p>
 
                         <ion-button :router-link="scanPath" router-direction="forward">
@@ -55,6 +55,12 @@
                         <ion-button @click="openPostUpload">
                             <ion-icon slot="start" :icon="openOutline" aria-label="Öffnen"></ion-icon>
                             Weiter auf der Webseite
+                        </ion-button>
+                    </ion-card-content>
+                    <ion-card-content v-else>
+                        <p>Diese Nachricht ist noch ein Entwurf. Bitte scannen Sie ein Dokument.</p>
+                        <ion-button :router-link="scanPath" router-direction="forward">
+                            Scanne Dokument
                         </ion-button>
                     </ion-card-content>
                 </ion-card>
@@ -72,7 +78,7 @@
                 <ion-list v-if="store.attachments.length > 0">
                     <ion-item v-for="attachment in store.attachments" :detail="false" :key="attachment.id" href="#"
                         :color="attachment.id === highlightAttachment ? 'success' : undefined"
-                        @click="openAttachment(attachment.site_url)">
+                        @click="openAttachment(attachment.file_url)">
                         <ion-label>
                             <h2>{{ attachment.name }}</h2>
                             <p>
@@ -185,13 +191,14 @@ async function handleRefresh(event: CustomEvent) {
 
 function openAttachment(url: string) {
     if (message && !message.is_draft) {
-        openUrl(url);
+        openUrl(url, "inAppBrowser");
     }
 }
 
 function openPostUpload() {
     if (request.value) {
         const url = `https://fragdenstaat.de${request.value.url}postnachricht-erstellen/`
+        console.log("Opening post upload URL:", url);
         openUrl(url);
     }
 }
