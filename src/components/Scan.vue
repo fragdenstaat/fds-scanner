@@ -9,7 +9,7 @@
             </ion-toolbar>
         </ion-header>
         <ion-content class="ion-padding">
-            <div class="ion-text-center">
+            <div v-if="!initializing" class="ion-text-center">
                 <p v-if="errorMessage">{{ errorMessage }}</p>
                 <ion-button @click="startScan">Scan starten</ion-button>
             </div>
@@ -18,10 +18,10 @@
 </template>
 
 <script setup lang="ts">
-import { IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, loadingController, onIonViewDidLeave, onIonViewWillEnter, useIonRouter } from '@ionic/vue';
+import { IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, loadingController, onIonViewDidEnter, onIonViewDidLeave, onIonViewWillEnter, useIonRouter } from '@ionic/vue';
 import { addPluginListener, invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { FoiAttachment } from '../stores/foiattachments';
 import { FoiMessage, useFoiMessagesStore } from '../stores/foimessages';
@@ -47,6 +47,7 @@ const messagePath = `/message/${messageId}/`;
 
 const ionRouter = useIonRouter();
 const errorMessage = ref<string>("");
+const initializing = ref<boolean>(true);
 
 
 let message: FoiMessage | null = null;
@@ -68,7 +69,7 @@ function handlePluginEvent(event: PdfProgress) {
 let loading: HTMLIonLoadingElement;
 let unlisten: null | (() => void) = null;
 
-onMounted(async () => {
+onIonViewDidEnter(async () => {
     if (message === null) {
         return
     }
@@ -90,13 +91,13 @@ onMounted(async () => {
             loading.message = "Anhang erstellt!"
         }
     })
-
     await startScan();
 });
 
 async function showError(message: string) {
     console.error(message);
     errorMessage.value = message;
+    initializing.value = false;
     await loading.dismiss();
 }
 
@@ -120,6 +121,7 @@ async function startScan() {
         await showError(e!.toString())
         return
     }
+    initializing.value = false;
     loading.message = "Starte Scan..."
     console.log("Starting scan")
     try {
@@ -151,7 +153,9 @@ async function startScan() {
 }
 
 onIonViewWillEnter(() => {
-    loading.dismiss();
+    if (loading) {
+        loading.dismiss();
+    }
 });
 
 onIonViewDidLeave(() => {
@@ -159,7 +163,11 @@ onIonViewDidLeave(() => {
         unlisten();
     }
     unlisten = null
-    loading.dismiss();
+    if (loading) {
+        loading.dismiss();
+    }
 });
+
+
 
 </script>
