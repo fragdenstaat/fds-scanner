@@ -18,4 +18,4 @@ uv run $script_dir/playstore_upload.py
 
 VERSION=$(jq -r '.version' package.json)
 
-gh release upload "v$VERSION" "$script_dir/../src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk"
+gh release create "v$VERSION" "$script_dir/../src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk"
