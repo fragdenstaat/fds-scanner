@@ -355,13 +355,27 @@ pub async fn logout(
             }
         }
     };
-    oauth2_client.revoke_token(StandardRevocableToken::AccessToken(AccessToken::new(
-        access_token,
-    )))?;
+    let revoke_request = oauth2_client.revoke_token(StandardRevocableToken::AccessToken(
+        AccessToken::new(access_token),
+    ));
+    if let Ok(revoke_request) = revoke_request {
+        if let Err(err) = revoke_request.request_async(async_http_client).await {
+            log::error!("Failed to revoke access token: {err:?}");
+        }
+    } else {
+        log::warn!("Could not create revoke request for access token!");
+    }
     if let Some(refresh_token) = refresh_token {
-        oauth2_client.revoke_token(StandardRevocableToken::RefreshToken(RefreshToken::new(
-            refresh_token,
-        )))?;
+        let revoke_request = oauth2_client.revoke_token(StandardRevocableToken::RefreshToken(
+            RefreshToken::new(refresh_token),
+        ));
+        if let Ok(revoke_request) = revoke_request {
+            if let Err(err) = revoke_request.request_async(async_http_client).await {
+                log::error!("Failed to revoke refresh token: {err:?}");
+            }
+        } else {
+            log::warn!("Could not create revoke request for refresh token!");
+        }
     }
 
     {
