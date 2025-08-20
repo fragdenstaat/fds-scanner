@@ -68,7 +68,6 @@ pub async fn get_user(
         tries += 1;
         let client = get_api_client(&state)?;
         let request = client.get(USER_ENDPOINT);
-        log::debug!("Requesting user data... {:?}", request);
 
         response = request.send().await?;
         if response.status().is_client_error() && tries < 2 {
@@ -79,7 +78,6 @@ pub async fn get_user(
     }
 
     let user = response.json::<User>().await?;
-    log::debug!("Received user: {:?}", user);
 
     {
         let mut state = state.lock().unwrap();
@@ -157,8 +155,6 @@ pub async fn start_oauth(
     state: State<'_, Mutex<AppState>>,
     start_url: Option<String>,
 ) -> Result<bool, AppError> {
-    log::info!("start auth in main called with start_url {:?}", start_url);
-
     let verified_start_url = match start_url {
         Some(url) => {
             let url = Url::parse(url.as_str())?;
@@ -200,9 +196,8 @@ pub async fn start_oauth(
         Some(url) => url,
         None => return Err(AuthorizationError("Invalid return URL".to_string()).into()),
     };
-    log::info!("Received auth response: {}", return_url);
     if !return_url.starts_with(REDIRECT_URI) {
-        return Err(AuthorizationError(format!("Mismatching return URL: {}", return_url)).into());
+        return Err(AuthorizationError(format!("Mismatching return URL: {return_url}")).into());
     }
     let return_url = Url::parse(return_url.as_str())?;
     let query_params = return_url.query_pairs();
@@ -212,7 +207,7 @@ pub async fn start_oauth(
 
     for (key, value) in query_params {
         if key == "error" {
-            return Err(AuthorizationError(format!("error in query params: {}", value)).into());
+            return Err(AuthorizationError(format!("error in query params: {value}")).into());
         }
         if key == "code" {
             authorization_code = Some(value.to_string());
@@ -254,15 +249,15 @@ pub async fn start_oauth(
                         .error_description()
                         .unwrap_or(&"No error description".to_string())
                 );
-                log::error!("Failed to request token: {:?}", response);
+                log::error!("Failed to request token: {response:?}");
                 return Err(AuthorizationError("Server response error".to_string()).into());
             }
             oauth2::RequestTokenError::Request(err) => {
-                log::error!("Failed to request token: {:?}", err);
+                log::error!("Failed to request token: {err:?}");
                 return Err(AuthorizationError("Request error".to_string()).into());
             }
             _ => {
-                log::error!("Failed to request token: {:?}", err);
+                log::error!("Failed to request token: {err:?}");
                 return Err(AuthorizationError("Parse or other error".to_string()).into());
             }
         },

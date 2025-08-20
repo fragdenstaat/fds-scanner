@@ -43,12 +43,11 @@ pub async fn scan_document(
     //     .path()
     //     .resolve("resources/example.pdf", BaseDirectory::Resource)?;
 
-    log::info!("scan document completed, file should be at {:?}", file_path);
+    log::info!("scan document completed, file should be at {file_path:?}");
 
     if !file_path.exists() {
         return Err(AppError::DocumentCameraResult(format!(
-            "File does not exist at {:?}",
-            file_path
+            "File does not exist at {file_path:?}"
         )));
     }
     {
@@ -86,7 +85,7 @@ pub async fn upload_document(
     let file_path = PathBuf::from(file_path);
     if !file_path.exists() {
         reset_upload_state(&app, &state)?;
-        log::warn!("upload_document: file does not exist at {:?}", file_path);
+        log::warn!("upload_document: file does not exist at {file_path:?}");
         return Ok(None);
     }
 
@@ -111,7 +110,7 @@ pub async fn upload_document(
     let result = resume_upload(&tus_client, &upload_url, &file_path).await?;
     if !result {
         reset_upload_state(&app, &state)?;
-        log::warn!("upload_document: upload does not exist at {:?}", upload_url);
+        log::warn!("upload_document: upload does not exist at {upload_url:?}");
         return Ok(None);
     }
     app.emit("scan-progress", "upload_complete")?;

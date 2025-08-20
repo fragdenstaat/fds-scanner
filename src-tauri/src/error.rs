@@ -43,20 +43,20 @@ pub enum TusError {
 impl Display for TusError {
     fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
         let message = match self {
-            TusError::UnexpectedStatusCode(status_code) => format!("The status code returned by the server was not one of the expected ones: {}", status_code),
+            TusError::UnexpectedStatusCode(status_code) => format!("The status code returned by the server was not one of the expected ones: {status_code}"),
             TusError::NotFoundError => "The file specified was not found by the server".to_string(),
-            TusError::MissingHeader(header_name) => format!("The '{}' header was missing from the server response", header_name),
-            TusError::IoError(error) => format!("An error occurred while doing disk IO. This may be while reading a file, or during a network call: {}", error),
-            TusError::ParsingError(error) => format!("Unable to parse a value, which should be an integer: {}", error),
+            TusError::MissingHeader(header_name) => format!("The '{header_name}' header was missing from the server response"),
+            TusError::IoError(error) => format!("An error occurred while doing disk IO. This may be while reading a file, or during a network call: {error}"),
+            TusError::ParsingError(error) => format!("Unable to parse a value, which should be an integer: {error}"),
             TusError::UnequalSizeError => "The size of the specified file, and the file size reported by the server do not match".to_string(),
             TusError::FileReadError => "Unable to read the specified file".to_string(),
             TusError::WrongUploadOffsetError => "The client tried to upload the file with an incorrect offset".to_string(),
             TusError::FileTooLarge => "The specified file is larger that what is supported by the server".to_string(),
-            TusError::RequestError(error) => format!("Error during HTTP request: {}", error),
-            TusError::HeaderParsingError(error) => format!("Could not convert header to str: {}", error),
+            TusError::RequestError(error) => format!("Error during HTTP request: {error}"),
+            TusError::HeaderParsingError(error) => format!("Could not convert header to str: {error}"),
         };
 
-        write!(f, "{}", message)?;
+        write!(f, "{message}")?;
 
         Ok(())
     }
