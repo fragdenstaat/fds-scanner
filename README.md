@@ -34,7 +34,7 @@ bash script/build_ios.sh
 ### Android
 
 ```bash
-# possiby: pnpm tauri android init
+# possibly: pnpm tauri android init
 # pnpm tauri icon public/fds-scanner.png --ios-color "#fff"
 bash script/build_ios.sh
 ```
